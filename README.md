@@ -127,7 +127,7 @@ export QDRANT_BASE_URL=http://localhost:6333
 export QDRANT_API_KEY=your_qdrant_api_key
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 
-./cardea-agentic-search-mcp-server qdrant \
+./cardea-agentic-search qdrant \
     --qdrant-collection documents \
     --qdrant-payload-field "full_text" \
     --embedding-service http://localhost:8081/v1 \
@@ -141,7 +141,7 @@ export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 export TIDB_CONNECTION="mysql://root:mypassword@localhost:4000/search_db"
 export CHAT_SERVICE_API_KEY=your_chat_api_key
 
-./cardea-agentic-search-mcp-server tidb \
+./cardea-agentic-search tidb \
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --chat-service http://localhost:8080/v1 \
@@ -158,7 +158,7 @@ export QDRANT_API_KEY=your_qdrant_api_key
 export CHAT_SERVICE_API_KEY=your_chat_api_key
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 
-./cardea-agentic-search-mcp-server search \
+./cardea-agentic-search search \
     --qdrant-collection documents \
     --qdrant-payload-field "full_text" \
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
@@ -213,7 +213,7 @@ Examples:
 ### Building
 
 ```bash
-cargo build --package cardea-agentic-search-mcp-server --release
+cargo build --release
 ```
 
 ### Configuration
