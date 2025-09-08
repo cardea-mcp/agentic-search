@@ -111,12 +111,12 @@ These options apply to all search modes:
 #### For TiDB Keyword Search
 
 - `TIDB_CONNECTION`: TiDB connection string in format `mysql://<USERNAME>:<PASSWORD>@<HOST>:<PORT>/<DATABASE>` (required)
+- `PROMPT_KEYWORD_EXTRACTOR`: Custom prompt for keyword extraction (optional, uses built-in default if not set)
 
 #### For External Services
 
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
-- `PROMPT_KEYWORD_EXTRACTOR`: Custom prompt for keyword extraction (optional, uses built-in default if not set)
 
 ## Examples
 
