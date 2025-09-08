@@ -130,7 +130,7 @@ jobs:
           mkdir archive
           cd archive
 
-          cp "../target/${{ matrix.target }}/release/cardea-agentic-search-mcp-server" ./
+          cp "../target/${{ matrix.target }}/release/cardea-agentic-search" ./
 
           tar -czf "${{ matrix.archive-name }}" *
           ls -al
