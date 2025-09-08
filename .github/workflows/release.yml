@@ -1,0 +1,202 @@
+name: Release
+
+on:
+  workflow_dispatch: # manual trigger release
+    inputs:
+      create_release:
+        description: 'Create new release'
+        required: true
+        type: boolean
+      release_version:
+        description: "Version (e.g. 1.0.0)"
+        required: true
+        type: string
+
+jobs:
+  build_macos:
+    name: build_macos
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [macos-x86_64, macos-arm64]
+        include:
+          - build: macos-x86_64
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            archive-name: cardea-agentic-search-apple-darwin-x86_64.tar.gz
+            bin-path: macos-x86_64-binary
+          - build: macos-arm64
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+            archive-name: cardea-agentic-search-apple-darwin-aarch64.tar.gz
+            bin-path: macos-arm64-binary
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        id: checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+
+      - name: List targets
+        run: |
+          rustup target list --installed
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Strip binary
+        run: |
+          strip "target/${{ matrix.target }}/release/cardea-agentic-search"
+
+          ls -al "target/${{ matrix.target }}/release"
+
+      - name: Build archive
+        shell: bash
+        run: |
+          mkdir archive
+          cd archive
+
+          cp "../target/${{ matrix.target }}/release/cardea-agentic-search" ./
+
+          tar -czf "${{ matrix.archive-name }}" *
+          ls -al
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bin-path }}
+          path: archive/${{ matrix.archive-name }}
+
+  build_linux:
+    name: build_linux
+    runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.image }}
+    strategy:
+      matrix:
+        build: [linux-x86_64, linux-aarch64]
+        include:
+          - build: linux-x86_64
+            os: ubuntu-22.04
+            image: ubuntu:20.04
+            rust: nightly
+            target: x86_64-unknown-linux-gnu
+            archive-name: cardea-agentic-search-unknown-linux-gnu-x86_64.tar.gz
+            bin-path: linux-x86_64-binary
+          - build: linux-aarch64
+            os: ubuntu-22.04-arm
+            image: arm64v8/ubuntu:20.04
+            rust: nightly
+            target: aarch64-unknown-linux-gnu
+            archive-name: cardea-agentic-search-unknown-linux-gnu-aarch64.tar.gz
+            bin-path: linux-aarch64-binary
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        id: checkout
+        uses: actions/checkout@v5
+
+      - name: Install dependencies silently
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt update && apt install -y curl build-essential pkg-config
+
+      - name: Install Rust-stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Strip binary
+        run: |
+          strip "target/${{ matrix.target }}/release/cardea-agentic-search"
+
+          ls -al "target/${{ matrix.target }}/release"
+
+      - name: Build archive
+        shell: bash
+        run: |
+          mkdir archive
+          cd archive
+
+          cp "../target/${{ matrix.target }}/release/cardea-agentic-search-mcp-server" ./
+
+          tar -czf "${{ matrix.archive-name }}" *
+          ls -al
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bin-path }}
+          path: archive/${{ matrix.archive-name }}
+
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: [build_macos, build_linux]
+    steps:
+      - name: Download artifacts (linux-x86_64-binary)
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64-binary
+          path: linux-x86_64-binary
+
+      - name: Download artifacts (linux-aarch64-binary)
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-aarch64-binary
+          path: linux-aarch64-binary
+
+      - name: Download artifacts (macos-x86_64-binary)
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-x86_64-binary
+          path: macos-x86_64-binary
+
+      - name: Download artifacts (macos-arm64-binary)
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-arm64-binary
+          path: macos-arm64-binary
+
+      - name: Display structure of downloaded files
+        run: |
+          ls -al
+          ls -al linux-x86_64-binary
+          ls -al linux-aarch64-binary
+          ls -al macos-x86_64-binary
+          ls -al macos-arm64-binary
+
+      - name: Tag and release names
+        id: tag_and_release_names
+        run: |
+          echo "tag_name=${{ github.event.inputs.release_version }}" >> $GITHUB_OUTPUT
+          echo "release_name=Cardea-Agentic-Search ${{ github.event.inputs.release_version }}" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload Release Asset
+        if: ${{ github.event.inputs.create_release == 'true' && github.ref == 'refs/heads/main'}}
+        uses: softprops/action-gh-release@v2.2.2
+        with:
+          name: ${{ steps.tag_and_release_names.outputs.release_name }}
+          tag_name: ${{ steps.tag_and_release_names.outputs.tag_name }}
+          body: TODO New Release.
+          draft: true
+          prerelease: true
+          files: |
+            linux-x86_64-binary/*
+            linux-aarch64-binary/*
+            macos-x86_64-binary/*
+            macos-arm64-binary/*
