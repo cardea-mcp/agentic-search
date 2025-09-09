@@ -2,6 +2,35 @@
 
 A Model Context Protocol (MCP) server that provides agentic search capabilities with support for vector search using Qdrant, keyword search using TiDB, or both combined.
 
+- [Cardea Agentic Search](#cardea-agentic-search)
+  - [Features](#features)
+  - [Architecture](#architecture)
+  - [Usage](#usage)
+    - [Command Line Options](#command-line-options)
+      - [Global Options](#global-options)
+      - [1. Qdrant Vector Search Only](#1-qdrant-vector-search-only)
+      - [2. TiDB Keyword Search Only](#2-tidb-keyword-search-only)
+      - [3. Combined Search (Both Vector and Keyword)](#3-combined-search-both-vector-and-keyword)
+    - [Environment Variables](#environment-variables)
+      - [For Qdrant Vector Search](#for-qdrant-vector-search)
+      - [For TiDB Keyword Search](#for-tidb-keyword-search)
+      - [For External Services](#for-external-services)
+  - [Examples](#examples)
+    - [Qdrant Vector Search Example](#qdrant-vector-search-example)
+    - [TiDB Keyword Search Example](#tidb-keyword-search-example)
+    - [Combined Search Example](#combined-search-example)
+  - [How It Works](#how-it-works)
+    - [Vector Search Process](#vector-search-process)
+    - [Keyword Search Process](#keyword-search-process)
+      - [Keyword Extraction Customization](#keyword-extraction-customization)
+  - [Development](#development)
+    - [Building](#building)
+    - [Configuration](#configuration)
+      - [Environment Variables](#environment-variables-1)
+      - [Security Best Practices](#security-best-practices)
+      - [Command Line Options](#command-line-options-1)
+    - [Dependencies](#dependencies)
+
 ## Features
 
 - **Vector Search**: Semantic search using Qdrant vector database with embedding services
@@ -212,11 +241,94 @@ Examples:
 
 ### Building
 
+**For development:**
+
 ```bash
+cargo build
+```
+
+**For production:**
+
+```bash
+# First, ensure no sensitive .env files exist (keep .env.example)
+ls .env* 2>/dev/null | grep -v ".env.example" && echo "⚠️ Remove .env files before production build" || echo "✅ No .env files found"
+
+# Build release version
 cargo build --release
 ```
 
+**Quick development setup:**
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Edit .env with your actual configuration values
+# (all variables are optional - see configuration section below)
+
+# 3. Build and run
+cargo build
+./target/debug/cardea-agentic-search --help
+```
+
 ### Configuration
+
+#### Environment Variables
+
+The server uses environment variables for sensitive configuration. Copy `.env.example` to `.env` and configure your values:
+
+```bash
+cp .env.example .env
+```
+
+**Required Environment Variables by Search Mode:**
+
+**For Vector Search (Qdrant mode):**
+
+- `QDRANT_BASE_URL`: Qdrant server URL (default: <http://127.0.0.1:6333>)
+- `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional - only needed if service requires authentication)
+- `QDRANT_API_KEY`: Qdrant API key (optional - only needed for authenticated Qdrant instances)
+
+**For Keyword Search (TiDB mode):**
+
+- `TIDB_CONNECTION`: TiDB connection string (format: `mysql://username:password@host:port/database`)
+- `CHAT_SERVICE_API_KEY`: API key for chat service (optional - only needed if service requires authentication)
+
+**For Combined Search mode:**
+
+- `QDRANT_BASE_URL`: Qdrant server URL
+- `TIDB_CONNECTION`: TiDB connection string
+- `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
+- `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
+- `QDRANT_API_KEY`: Qdrant API key (optional)
+
+**Optional Environment Variables:**
+
+- `PROMPT_KEYWORD_EXTRACTOR`: Custom prompt for keyword extraction (has built-in default)
+- `RUST_LOG`: Logging level (default: info)
+
+**Example .env file:**
+
+```bash
+QDRANT_BASE_URL=http://127.0.0.1:6333
+# QDRANT_API_KEY=your_qdrant_api_key  # Optional - only needed for authenticated Qdrant
+TIDB_CONNECTION=mysql://user:pass@host:4000/database
+# EMBEDDING_SERVICE_API_KEY=your_embedding_key  # Optional - only needed if service requires auth
+# CHAT_SERVICE_API_KEY=your_chat_key  # Optional - only needed if service requires auth
+RUST_LOG=info
+# PROMPT_KEYWORD_EXTRACTOR=Custom prompt for keyword extraction  # Optional - has built-in default
+```
+
+#### Security Best Practices
+
+**⚠️ Important Security Notes:**
+
+- **Never commit `.env` files** to version control
+- **Remove `.env` files** before building for production
+- Use **system environment variables** or **container configurations** for production deployments
+- The `.env.example` file is safe to commit and should be kept as a template
+
+#### Command Line Options
 
 The server uses a flexible configuration system that allows you to:
 

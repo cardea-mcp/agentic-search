@@ -111,6 +111,18 @@ enum TransportType {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Load .env file in development mode only
+    #[cfg(debug_assertions)]
+    dotenv::dotenv().ok();
+    
+    // Prevent .env files in production builds
+    #[cfg(not(debug_assertions))]
+    {
+        if std::path::Path::new(".env").exists() {
+            panic!("Production environment should not contain .env file!");
+        }
+    }
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
