@@ -62,9 +62,9 @@ enum SearchMode {
         /// Table name to search in TiDB
         #[arg(long, required = true)]
         tidb_table_name: String,
-        /// Field name for full-text search content (can be overridden by TIDB_CONTENT_FIELD env var)
+        /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
         #[arg(long, default_value = "content")]
-        tidb_content_field: String,
+        tidb_search_field: String,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -91,9 +91,9 @@ enum SearchMode {
         /// Table name to search in TiDB
         #[arg(long, required = true)]
         tidb_table_name: String,
-        /// Field name for full-text search content (can be overridden by TIDB_CONTENT_FIELD env var)
+        /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
         #[arg(long, default_value = "content")]
-        tidb_content_field: String,
+        tidb_search_field: String,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -179,7 +179,7 @@ async fn main() -> anyhow::Result<()> {
         SearchMode::Tidb {
             tidb_ssl_ca,
             tidb_table_name,
-            tidb_content_field,
+            tidb_search_field,
             limit,
             score_threshold,
             chat_service,
@@ -187,14 +187,17 @@ async fn main() -> anyhow::Result<()> {
             info!("Enabling keyword search mode");
 
             // Determine content field with priority: Environment Variable > Command Line > Default
-            let content_field = match env::var("TIDB_CONTENT_FIELD") {
+            let tidb_search_field = match env::var("TIDB_SEARCH_FIELD") {
                 Ok(env_value) => {
-                    info!("Using TIDB_CONTENT_FIELD from environment: {}", env_value);
+                    info!("Using TIDB_SEARCH_FIELD from environment: {}", env_value);
                     env_value
                 }
                 Err(_) => {
-                    info!("Using TIDB_CONTENT_FIELD from command line argument: {}", tidb_content_field);
-                    tidb_content_field
+                    info!(
+                        "Using TIDB_SEARCH_FIELD from command line argument: {}",
+                        tidb_search_field
+                    );
+                    tidb_search_field
                 }
             };
 
@@ -254,7 +257,7 @@ async fn main() -> anyhow::Result<()> {
                     database,
                     table_name: tidb_table_name,
                     pool,
-                    content_field,
+                    search_field: tidb_search_field,
                 }),
                 limit,
                 score_threshold,
@@ -270,7 +273,7 @@ async fn main() -> anyhow::Result<()> {
             qdrant_payload_field,
             tidb_ssl_ca,
             tidb_table_name,
-            tidb_content_field,
+            tidb_search_field,
             limit,
             score_threshold,
             chat_service,
@@ -279,14 +282,17 @@ async fn main() -> anyhow::Result<()> {
             info!("Enabling both vector and keyword search modes");
 
             // Determine content field with priority: Environment Variable > Command Line > Default
-            let content_field = match env::var("TIDB_CONTENT_FIELD") {
+            let tidb_search_field = match env::var("TIDB_SEARCH_FIELD") {
                 Ok(env_value) => {
-                    info!("Using TIDB_CONTENT_FIELD from environment: {}", env_value);
+                    info!("Using TIDB_SEARCH_FIELD from environment: {}", env_value);
                     env_value
                 }
                 Err(_) => {
-                    info!("Using TIDB_CONTENT_FIELD from command line argument: {}", tidb_content_field);
-                    tidb_content_field
+                    info!(
+                        "Using TIDB_SEARCH_FIELD from command line argument: {}",
+                        tidb_search_field
+                    );
+                    tidb_search_field
                 }
             };
 
@@ -361,7 +367,7 @@ async fn main() -> anyhow::Result<()> {
                     database: tidb_database,
                     table_name: tidb_table_name,
                     pool,
-                    content_field,
+                    search_field: tidb_search_field,
                 }),
                 limit,
                 score_threshold,
@@ -432,7 +438,7 @@ pub struct TiDBConfig {
     pub database: String,
     pub table_name: String,
     pub pool: Pool,
-    pub content_field: String,
+    pub search_field: String,
 }
 
 #[derive(Debug, Clone)]

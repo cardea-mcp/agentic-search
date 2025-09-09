@@ -88,6 +88,7 @@ These options apply to all search modes:
 ./cardea-agentic-search-mcp-server tidb \
     --tidb-ssl-ca /path/to/ca.pem \
     --tidb-table-name my_table \
+    --tidb-search-field "content" \
     --chat-service http://localhost:8080/v1 \
     --limit 15
 ```
@@ -98,6 +99,7 @@ These options apply to all search modes:
   - On macOS: typically `/etc/ssl/cert.pem`
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (**required**)
+- `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
 - `--chat-service`: Chat service base URL (**required**)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
@@ -110,6 +112,7 @@ These options apply to all search modes:
     --qdrant-payload-field "full_text" \
     --tidb-ssl-ca /path/to/ca.pem \
     --tidb-table-name my_table \
+    --tidb-search-field "content" \
     --chat-service http://localhost:8080/v1 \
     --embedding-service http://localhost:8081/v1 \
     --limit 25
@@ -123,6 +126,7 @@ These options apply to all search modes:
   - On macOS: typically `/etc/ssl/cert.pem`
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (**required**)
+- `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
 - `--chat-service`: Chat service base URL (**required**)
 - `--embedding-service`: Embedding service base URL (**required**)
 - `--limit`: Maximum number of results (default: 10)
@@ -173,6 +177,7 @@ export CHAT_SERVICE_API_KEY=your_chat_api_key
 ./cardea-agentic-search tidb \
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
+    --tidb-search-field "content" \
     --chat-service http://localhost:8080/v1 \
     --limit 20 \
     --score-threshold 0.4
@@ -192,6 +197,7 @@ export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
     --qdrant-payload-field "full_text" \
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
+    --tidb-search-field "content" \
     --chat-service http://localhost:8080/v1 \
     --embedding-service http://localhost:8081/v1 \
     --limit 30 \
@@ -293,7 +299,7 @@ cp .env.example .env
 
 - `TIDB_CONNECTION`: TiDB connection string (format: `mysql://username:password@host:port/database`)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional - only needed if service requires authentication)
-- `TIDB_CONTENT_FIELD`: Field name for full-text search content (optional, default: "content")
+- `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
 
 **For Combined Search mode:**
 
@@ -302,7 +308,7 @@ cp .env.example .env
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
 - `QDRANT_API_KEY`: Qdrant API key (optional)
-- `TIDB_CONTENT_FIELD`: Field name for full-text search content (optional, default: "content")
+- `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
 
 **Configuration Priority (highest to lowest):**
 
@@ -321,7 +327,7 @@ cp .env.example .env
 QDRANT_BASE_URL=http://127.0.0.1:6333
 # QDRANT_API_KEY=your_qdrant_api_key  # Optional - only needed for authenticated Qdrant
 TIDB_CONNECTION=mysql://user:pass@host:4000/database
-# TIDB_CONTENT_FIELD=content  # Optional - field name for full-text search (default: "content")
+# TIDB_SEARCH_FIELD=content  # Optional - field name for full-text search (default: "content")
 # EMBEDDING_SERVICE_API_KEY=your_embedding_key  # Optional - only needed if service requires auth
 # CHAT_SERVICE_API_KEY=your_chat_key  # Optional - only needed if service requires auth
 RUST_LOG=info
@@ -332,12 +338,12 @@ RUST_LOG=info
 
 ```bash
 # Example 1: Using environment variable (highest priority)
-export TIDB_CONTENT_FIELD="article_text"
-./cardea-agentic-search tidb --tidb-content-field "description" [other options...]
+export TIDB_SEARCH_FIELD="article_text"
+./cardea-agentic-search tidb --tidb-search-field "description" [other options...]
 # Result: Uses "article_text" from environment variable
 
 # Example 2: Using command line argument
-./cardea-agentic-search tidb --tidb-content-field "full_text" [other options...]
+./cardea-agentic-search tidb --tidb-search-field "full_text" [other options...]
 # Result: Uses "full_text" from command line
 
 # Example 3: Using default value

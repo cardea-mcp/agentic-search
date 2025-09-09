@@ -570,9 +570,9 @@ impl AgenticSearchServer {
                 DESC LIMIT {}",
                     tidb_config.table_name,
                     query,
-                    tidb_config.content_field,
+                    tidb_config.search_field,
                     query,
-                    tidb_config.content_field,
+                    tidb_config.search_field,
                     self.config.limit
                 );
 
