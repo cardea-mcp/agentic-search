@@ -36,12 +36,12 @@ struct Args {
 enum SearchMode {
     /// Enable vector search only
     Qdrant {
-        /// Name of the collection to search in Qdrant
-        #[arg(long, required = true)]
-        qdrant_collection: String,
-        /// The name of the field in the payload that contains the source of the document
-        #[arg(long, required = true)]
-        qdrant_payload_field: String,
+        /// Name of the collection to search in Qdrant (can be overridden by QDRANT_COLLECTION env var)
+        #[arg(long, required = false)]
+        qdrant_collection: Option<String>,
+        /// The name of the field in the payload that contains the source of the document (can be overridden by QDRANT_PAYLOAD_FIELD env var)
+        #[arg(long, required = false)]
+        qdrant_payload_field: Option<String>,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -56,12 +56,12 @@ enum SearchMode {
     Tidb {
         /// Path to the SSL CA certificate. On macOS, this is typically
         /// `/etc/ssl/cert.pem`. On Debian/Ubuntu/Arch Linux, it's typically
-        /// `/etc/ssl/certs/ca-certificates.crt`.
-        #[arg(long, required = true)]
-        tidb_ssl_ca: PathBuf,
-        /// Table name to search in TiDB
-        #[arg(long, required = true)]
-        tidb_table_name: String,
+        /// `/etc/ssl/certs/ca-certificates.crt`. (can be overridden by TIDB_SSL_CA env var)
+        #[arg(long, required = false)]
+        tidb_ssl_ca: Option<PathBuf>,
+        /// Table name to search in TiDB (can be overridden by TIDB_TABLE_NAME env var)
+        #[arg(long, required = false)]
+        tidb_table_name: Option<String>,
         /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
         #[arg(long, default_value = "content")]
         tidb_search_field: String,
@@ -77,20 +77,20 @@ enum SearchMode {
     },
     /// Enable both vector and keyword search
     Search {
-        /// Name of the collection to search in Qdrant
-        #[arg(long, required = true)]
-        qdrant_collection: String,
-        /// The name of the field in the payload that contains the source of the document
-        #[arg(long, required = true)]
-        qdrant_payload_field: String,
+        /// Name of the collection to search in Qdrant (can be overridden by QDRANT_COLLECTION env var)
+        #[arg(long, required = false)]
+        qdrant_collection: Option<String>,
+        /// The name of the field in the payload that contains the source of the document (can be overridden by QDRANT_PAYLOAD_FIELD env var)
+        #[arg(long, required = false)]
+        qdrant_payload_field: Option<String>,
         /// Path to the SSL CA certificate. On macOS, this is typically
         /// `/etc/ssl/cert.pem`. On Debian/Ubuntu/Arch Linux, it's typically
-        /// `/etc/ssl/certs/ca-certificates.crt`.
-        #[arg(long, required = true)]
-        tidb_ssl_ca: PathBuf,
-        /// Table name to search in TiDB
-        #[arg(long, required = true)]
-        tidb_table_name: String,
+        /// `/etc/ssl/certs/ca-certificates.crt`. (can be overridden by TIDB_SSL_CA env var)
+        #[arg(long, required = false)]
+        tidb_ssl_ca: Option<PathBuf>,
+        /// Table name to search in TiDB (can be overridden by TIDB_TABLE_NAME env var)
+        #[arg(long, required = false)]
+        tidb_table_name: Option<String>,
         /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
         #[arg(long, default_value = "content")]
         tidb_search_field: String,
@@ -149,6 +149,40 @@ async fn main() -> anyhow::Result<()> {
         } => {
             info!("Enabling vector search mode");
 
+            // Determine collection with priority: Environment Variable > Command Line > Error
+            let qdrant_collection = match env::var("QDRANT_COLLECTION") {
+                Ok(env_value) => {
+                    info!("Using QDRANT_COLLECTION from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match qdrant_collection {
+                    Some(arg_value) => {
+                        info!("Using qdrant_collection from command line argument: {}", arg_value);
+                        arg_value
+                    }
+                    None => {
+                        bail!("QDRANT_COLLECTION environment variable or --qdrant-collection argument is required");
+                    }
+                }
+            };
+
+            // Determine payload field with priority: Environment Variable > Command Line > Error
+            let qdrant_payload_field = match env::var("QDRANT_PAYLOAD_FIELD") {
+                Ok(env_value) => {
+                    info!("Using QDRANT_PAYLOAD_FIELD from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match qdrant_payload_field {
+                    Some(arg_value) => {
+                        info!("Using qdrant_payload_field from command line argument: {}", arg_value);
+                        arg_value
+                    }
+                    None => {
+                        bail!("QDRANT_PAYLOAD_FIELD environment variable or --qdrant-payload-field argument is required");
+                    }
+                }
+            };
+
             // parse base url
             let qdrant_base_url =
                 std::env::var("QDRANT_BASE_URL").unwrap_or(DEFAULT_QDRANT_BASE_URL.to_string());
@@ -185,6 +219,40 @@ async fn main() -> anyhow::Result<()> {
             chat_service,
         } => {
             info!("Enabling keyword search mode");
+
+            // Determine SSL CA path with priority: Environment Variable > Command Line > Error
+            let tidb_ssl_ca = match env::var("TIDB_SSL_CA") {
+                Ok(env_value) => {
+                    info!("Using TIDB_SSL_CA from environment: {}", env_value);
+                    PathBuf::from(env_value)
+                }
+                Err(_) => match tidb_ssl_ca {
+                    Some(arg_value) => {
+                        info!("Using tidb_ssl_ca from command line argument: {}", arg_value.display());
+                        arg_value
+                    }
+                    None => {
+                        bail!("TIDB_SSL_CA environment variable or --tidb-ssl-ca argument is required");
+                    }
+                }
+            };
+
+            // Determine table name with priority: Environment Variable > Command Line > Error
+            let tidb_table_name = match env::var("TIDB_TABLE_NAME") {
+                Ok(env_value) => {
+                    info!("Using TIDB_TABLE_NAME from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match tidb_table_name {
+                    Some(arg_value) => {
+                        info!("Using tidb_table_name from command line argument: {}", arg_value);
+                        arg_value
+                    }
+                    None => {
+                        bail!("TIDB_TABLE_NAME environment variable or --tidb-table-name argument is required");
+                    }
+                }
+            };
 
             // Determine content field with priority: Environment Variable > Command Line > Default
             let tidb_search_field = match env::var("TIDB_SEARCH_FIELD") {
@@ -280,6 +348,74 @@ async fn main() -> anyhow::Result<()> {
             embedding_service,
         } => {
             info!("Enabling both vector and keyword search modes");
+
+            // Determine collection with priority: Environment Variable > Command Line > Error
+            let qdrant_collection = match env::var("QDRANT_COLLECTION") {
+                Ok(env_value) => {
+                    info!("Using QDRANT_COLLECTION from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match qdrant_collection {
+                    Some(arg_value) => {
+                        info!("Using qdrant_collection from command line argument: {}", arg_value);
+                        arg_value
+                    }
+                    None => {
+                        bail!("QDRANT_COLLECTION environment variable or --qdrant-collection argument is required");
+                    }
+                }
+            };
+
+            // Determine payload field with priority: Environment Variable > Command Line > Error
+            let qdrant_payload_field = match env::var("QDRANT_PAYLOAD_FIELD") {
+                Ok(env_value) => {
+                    info!("Using QDRANT_PAYLOAD_FIELD from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match qdrant_payload_field {
+                    Some(arg_value) => {
+                        info!("Using qdrant_payload_field from command line argument: {}", arg_value);
+                        arg_value
+                    }
+                    None => {
+                        bail!("QDRANT_PAYLOAD_FIELD environment variable or --qdrant-payload-field argument is required");
+                    }
+                }
+            };
+
+            // Determine SSL CA path with priority: Environment Variable > Command Line > Error
+            let tidb_ssl_ca = match env::var("TIDB_SSL_CA") {
+                Ok(env_value) => {
+                    info!("Using TIDB_SSL_CA from environment: {}", env_value);
+                    PathBuf::from(env_value)
+                }
+                Err(_) => match tidb_ssl_ca {
+                    Some(arg_value) => {
+                        info!("Using tidb_ssl_ca from command line argument: {}", arg_value.display());
+                        arg_value
+                    }
+                    None => {
+                        bail!("TIDB_SSL_CA environment variable or --tidb-ssl-ca argument is required");
+                    }
+                }
+            };
+
+            // Determine table name with priority: Environment Variable > Command Line > Error
+            let tidb_table_name = match env::var("TIDB_TABLE_NAME") {
+                Ok(env_value) => {
+                    info!("Using TIDB_TABLE_NAME from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match tidb_table_name {
+                    Some(arg_value) => {
+                        info!("Using tidb_table_name from command line argument: {}", arg_value);
+                        arg_value
+                    }
+                    None => {
+                        bail!("TIDB_TABLE_NAME environment variable or --tidb-table-name argument is required");
+                    }
+                }
+            };
 
             // Determine content field with priority: Environment Variable > Command Line > Default
             let tidb_search_field = match env::var("TIDB_SEARCH_FIELD") {

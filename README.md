@@ -2,35 +2,6 @@
 
 A Model Context Protocol (MCP) server that provides agentic search capabilities with support for vector search using Qdrant, keyword search using TiDB, or both combined.
 
-- [Cardea Agentic Search](#cardea-agentic-search)
-  - [Features](#features)
-  - [Architecture](#architecture)
-  - [Usage](#usage)
-    - [Command Line Options](#command-line-options)
-      - [Global Options](#global-options)
-      - [1. Qdrant Vector Search Only](#1-qdrant-vector-search-only)
-      - [2. TiDB Keyword Search Only](#2-tidb-keyword-search-only)
-      - [3. Combined Search (Both Vector and Keyword)](#3-combined-search-both-vector-and-keyword)
-    - [Environment Variables](#environment-variables)
-      - [For Qdrant Vector Search](#for-qdrant-vector-search)
-      - [For TiDB Keyword Search](#for-tidb-keyword-search)
-      - [For External Services](#for-external-services)
-  - [Examples](#examples)
-    - [Qdrant Vector Search Example](#qdrant-vector-search-example)
-    - [TiDB Keyword Search Example](#tidb-keyword-search-example)
-    - [Combined Search Example](#combined-search-example)
-  - [How It Works](#how-it-works)
-    - [Vector Search Process](#vector-search-process)
-    - [Keyword Search Process](#keyword-search-process)
-      - [Keyword Extraction Customization](#keyword-extraction-customization)
-  - [Development](#development)
-    - [Building](#building)
-    - [Configuration](#configuration)
-      - [Environment Variables](#environment-variables-1)
-      - [Security Best Practices](#security-best-practices)
-      - [Command Line Options](#command-line-options-1)
-    - [Dependencies](#dependencies)
-
 ## Features
 
 - **Vector Search**: Semantic search using Qdrant vector database with embedding services
@@ -74,8 +45,8 @@ These options apply to all search modes:
 
 **Options:**
 
-- `--qdrant-collection`: Collection name in Qdrant (**required**)
-- `--qdrant-payload-field`: The name of the field in the payload that contains the source of the document (**required**)
+- `--qdrant-collection`: Collection name in Qdrant (required if QDRANT_COLLECTION env var not set)
+- `--qdrant-payload-field`: The name of the field in the payload that contains the source of the document (required if QDRANT_PAYLOAD_FIELD env var not set)
 - `--embedding-service`: Embedding service base URL (**required**)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
@@ -95,10 +66,10 @@ These options apply to all search modes:
 
 **Options:**
 
-- `--tidb-ssl-ca`: TiDB SSL CA certificate path (**required**)
+- `--tidb-ssl-ca`: TiDB SSL CA certificate path (required if TIDB_SSL_CA env var not set)
   - On macOS: typically `/etc/ssl/cert.pem`
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
-- `--tidb-table-name`: Table name in TiDB (**required**)
+- `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
 - `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
 - `--chat-service`: Chat service base URL (**required**)
 - `--limit`: Maximum number of results (default: 10)
@@ -120,12 +91,12 @@ These options apply to all search modes:
 
 **Options:**
 
-- `--qdrant-collection`: Collection name in Qdrant (**required**)
-- `--qdrant-payload-field`: The name of the field in the payload that contains the source of the document (**required**)
-- `--tidb-ssl-ca`: TiDB SSL CA certificate path (**required**)
+- `--qdrant-collection`: Collection name in Qdrant (required if QDRANT_COLLECTION env var not set)
+- `--qdrant-payload-field`: The name of the field in the payload that contains the source of the document (required if QDRANT_PAYLOAD_FIELD env var not set)
+- `--tidb-ssl-ca`: TiDB SSL CA certificate path (required if TIDB_SSL_CA env var not set)
   - On macOS: typically `/etc/ssl/cert.pem`
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
-- `--tidb-table-name`: Table name in TiDB (**required**)
+- `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
 - `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
 - `--chat-service`: Chat service base URL (**required**)
 - `--embedding-service`: Embedding service base URL (**required**)
@@ -140,10 +111,15 @@ These options apply to all search modes:
 
 - `QDRANT_BASE_URL`: Qdrant database URL (default: http://127.0.0.1:6333)
 - `QDRANT_API_KEY`: API key for Qdrant (optional)
+- `QDRANT_COLLECTION`: Name of the collection to search in Qdrant (required for vector search modes, overrides command line)
+- `QDRANT_PAYLOAD_FIELD`: The name of the field in the payload that contains the source of the document (required for vector search modes, overrides command line)
 
 #### For TiDB Keyword Search
 
 - `TIDB_CONNECTION`: TiDB connection string in format `mysql://<USERNAME>:<PASSWORD>@<HOST>:<PORT>/<DATABASE>` (required)
+- `TIDB_SSL_CA`: Path to the SSL CA certificate (required for TiDB modes, overrides command line)
+- `TIDB_TABLE_NAME`: Table name to search in TiDB (required for TiDB modes, overrides command line)
+- `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
 - `PROMPT_KEYWORD_EXTRACTOR`: Custom prompt for keyword extraction (optional, uses built-in default if not set)
 
 #### For External Services
@@ -158,8 +134,17 @@ These options apply to all search modes:
 ```bash
 export QDRANT_BASE_URL=http://localhost:6333
 export QDRANT_API_KEY=your_qdrant_api_key
+export QDRANT_COLLECTION=documents
+export QDRANT_PAYLOAD_FIELD="full_text"
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 
+# Using environment variables (no need for --qdrant-collection and --qdrant-payload-field)
+./cardea-agentic-search qdrant \
+    --embedding-service http://localhost:8081/v1 \
+    --limit 10 \
+    --score-threshold 0.6
+
+# Or using command line arguments (will override environment variables if set)
 ./cardea-agentic-search qdrant \
     --qdrant-collection documents \
     --qdrant-payload-field "full_text" \
@@ -172,8 +157,18 @@ export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 
 ```bash
 export TIDB_CONNECTION="mysql://root:mypassword@localhost:4000/search_db"
+export TIDB_SSL_CA=/etc/ssl/certs/ca.pem
+export TIDB_TABLE_NAME=documents
 export CHAT_SERVICE_API_KEY=your_chat_api_key
 
+# Using environment variables (no need for --tidb-ssl-ca and --tidb-table-name)
+./cardea-agentic-search tidb \
+    --tidb-search-field "content" \
+    --chat-service http://localhost:8080/v1 \
+    --limit 20 \
+    --score-threshold 0.4
+
+# Or using command line arguments (will override environment variables if set)
 ./cardea-agentic-search tidb \
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
@@ -189,9 +184,22 @@ export CHAT_SERVICE_API_KEY=your_chat_api_key
 export TIDB_CONNECTION="mysql://root:mypassword@localhost:4000/search_db"
 export QDRANT_BASE_URL=http://localhost:6333
 export QDRANT_API_KEY=your_qdrant_api_key
+export QDRANT_COLLECTION=documents
+export QDRANT_PAYLOAD_FIELD="full_text"
+export TIDB_SSL_CA=/etc/ssl/certs/ca.pem
+export TIDB_TABLE_NAME=documents
 export CHAT_SERVICE_API_KEY=your_chat_api_key
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 
+# Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, --tidb-ssl-ca, --tidb-table-name)
+./cardea-agentic-search search \
+    --tidb-search-field "content" \
+    --chat-service http://localhost:8080/v1 \
+    --embedding-service http://localhost:8081/v1 \
+    --limit 15 \
+    --score-threshold 0.5
+
+# Or using command line arguments (will override environment variables if set)
 ./cardea-agentic-search search \
     --qdrant-collection documents \
     --qdrant-payload-field "full_text" \
@@ -200,7 +208,7 @@ export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
     --tidb-search-field "content" \
     --chat-service http://localhost:8080/v1 \
     --embedding-service http://localhost:8081/v1 \
-    --limit 30 \
+    --limit 15 \
     --score-threshold 0.5
 ```
 
@@ -294,6 +302,8 @@ cp .env.example .env
 - `QDRANT_BASE_URL`: Qdrant server URL (default: <http://127.0.0.1:6333>)
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional - only needed if service requires authentication)
 - `QDRANT_API_KEY`: Qdrant API key (optional - only needed for authenticated Qdrant instances)
+- `QDRANT_COLLECTION`: Name of the collection to search in Qdrant (required for vector search modes, overrides command line)
+- `QDRANT_PAYLOAD_FIELD`: The name of the field in the payload that contains the source of the document (required for vector search modes, overrides command line)
 
 **For Keyword Search (TiDB mode):**
 
@@ -304,11 +314,13 @@ cp .env.example .env
 **For Combined Search mode:**
 
 - `QDRANT_BASE_URL`: Qdrant server URL
+- `QDRANT_API_KEY`: Qdrant API key (optional)
+- `QDRANT_COLLECTION`: Name of the collection to search in Qdrant (required for vector search modes, overrides command line)
+- `QDRANT_PAYLOAD_FIELD`: The name of the field in the payload that contains the source of the document (required for vector search modes, overrides command line)
 - `TIDB_CONNECTION`: TiDB connection string
+- `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
-- `QDRANT_API_KEY`: Qdrant API key (optional)
-- `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
 
 **Configuration Priority (highest to lowest):**
 
