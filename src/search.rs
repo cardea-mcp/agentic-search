@@ -560,37 +560,20 @@ impl AgenticSearchServer {
                 }
 
                 // execute full-text search
-
-                // ! Do not remove this block
-                {
-                    // let search_sql = format!(
-                    //     r"SELECT * FROM {}
-                    //         WHERE fts_match_word(?, content)
-                    //         ORDER BY fts_match_word(?, content)
-                    //         DESC LIMIT ?",
-                    //     config.table_name
-                    // );
-
-                    // let hits: Vec<TidbSearchHit> = conn
-                    //     .exec(&search_sql, (query.clone(), query, config.limit))
-                    //     .map_err(|e| {
-                    //         let error_message = format!("Failed to execute search: {e}");
-
-                    //         error!(error_message);
-
-                    //         McpError::new(ErrorCode::INTERNAL_ERROR, error_message, None)
-                    //     })?;
-                }
-
                 let query = keywords.as_ref().replace("'", "''"); // ! This is a workaround for the issue that the query contains single quotes.
 
                 debug!("\nExecuting full-text search for '{}'...", query);
                 let search_sql = format!(
                     r"SELECT * FROM {}
-                WHERE fts_match_word('{}', content)
-                ORDER BY fts_match_word('{}', content)
+                WHERE fts_match_word('{}', {})
+                ORDER BY fts_match_word('{}', {})
                 DESC LIMIT {}",
-                    tidb_config.table_name, query, query, self.config.limit
+                    tidb_config.table_name,
+                    query,
+                    tidb_config.content_field,
+                    query,
+                    tidb_config.content_field,
+                    self.config.limit
                 );
 
                 conn.query(&search_sql).map_err(|e| {

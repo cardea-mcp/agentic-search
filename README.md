@@ -293,6 +293,7 @@ cp .env.example .env
 
 - `TIDB_CONNECTION`: TiDB connection string (format: `mysql://username:password@host:port/database`)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional - only needed if service requires authentication)
+- `TIDB_CONTENT_FIELD`: Field name for full-text search content (optional, default: "content")
 
 **For Combined Search mode:**
 
@@ -301,6 +302,13 @@ cp .env.example .env
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
 - `QDRANT_API_KEY`: Qdrant API key (optional)
+- `TIDB_CONTENT_FIELD`: Field name for full-text search content (optional, default: "content")
+
+**Configuration Priority (highest to lowest):**
+
+1. **Environment variables** (highest priority)
+2. **Command line arguments**
+3. **Default values** (lowest priority)
 
 **Optional Environment Variables:**
 
@@ -313,10 +321,28 @@ cp .env.example .env
 QDRANT_BASE_URL=http://127.0.0.1:6333
 # QDRANT_API_KEY=your_qdrant_api_key  # Optional - only needed for authenticated Qdrant
 TIDB_CONNECTION=mysql://user:pass@host:4000/database
+# TIDB_CONTENT_FIELD=content  # Optional - field name for full-text search (default: "content")
 # EMBEDDING_SERVICE_API_KEY=your_embedding_key  # Optional - only needed if service requires auth
 # CHAT_SERVICE_API_KEY=your_chat_key  # Optional - only needed if service requires auth
 RUST_LOG=info
 # PROMPT_KEYWORD_EXTRACTOR=Custom prompt for keyword extraction  # Optional - has built-in default
+```
+
+**Configuration Examples:**
+
+```bash
+# Example 1: Using environment variable (highest priority)
+export TIDB_CONTENT_FIELD="article_text"
+./cardea-agentic-search tidb --tidb-content-field "description" [other options...]
+# Result: Uses "article_text" from environment variable
+
+# Example 2: Using command line argument
+./cardea-agentic-search tidb --tidb-content-field "full_text" [other options...]
+# Result: Uses "full_text" from command line
+
+# Example 3: Using default value
+./cardea-agentic-search tidb [other options...]
+# Result: Uses "content" (default value)
 ```
 
 #### Security Best Practices
