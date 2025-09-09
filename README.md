@@ -38,7 +38,7 @@ These options apply to all search modes:
 ./cardea-agentic-search-mcp-server qdrant \
     --qdrant-collection my_collection \
     --qdrant-payload-field "full_text" \
-    --embedding-service http://localhost:8081/v1 \
+    --embedding-service-base-url http://localhost:8081/v1 \
     --limit 20 \
     --score-threshold 0.7
 ```
@@ -47,7 +47,7 @@ These options apply to all search modes:
 
 - `--qdrant-collection`: Collection name in Qdrant (required if QDRANT_COLLECTION env var not set)
 - `--qdrant-payload-field`: The name of the field in the payload that contains the source of the document (required if QDRANT_PAYLOAD_FIELD env var not set)
-- `--embedding-service`: Embedding service base URL (**required**)
+- `--embedding-service-base-url`: Embedding service base URL (required if EMBEDDING_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
 
@@ -60,7 +60,7 @@ These options apply to all search modes:
     --tidb-ssl-ca /path/to/ca.pem \
     --tidb-table-name my_table \
     --tidb-search-field "content" \
-    --chat-service http://localhost:8080/v1 \
+    --chat-service-base-url http://localhost:8080/v1 \
     --limit 15
 ```
 
@@ -71,7 +71,7 @@ These options apply to all search modes:
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
 - `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
-- `--chat-service`: Chat service base URL (**required**)
+- `--chat-service-base-url`: Chat service base URL (required if CHAT_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
 
@@ -84,8 +84,8 @@ These options apply to all search modes:
     --tidb-ssl-ca /path/to/ca.pem \
     --tidb-table-name my_table \
     --tidb-search-field "content" \
-    --chat-service http://localhost:8080/v1 \
-    --embedding-service http://localhost:8081/v1 \
+    --chat-service-base-url http://localhost:8080/v1 \
+    --embedding-service-base-url http://localhost:8081/v1 \
     --limit 25
 ```
 
@@ -98,8 +98,8 @@ These options apply to all search modes:
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
 - `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
-- `--chat-service`: Chat service base URL (**required**)
-- `--embedding-service`: Embedding service base URL (**required**)
+- `--chat-service-base-url`: Chat service base URL (required if CHAT_SERVICE_BASE_URL env var not set)
+- `--embedding-service-base-url`: Embedding service base URL (required if EMBEDDING_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
 
@@ -124,8 +124,10 @@ These options apply to all search modes:
 
 #### For External Services
 
+- `CHAT_SERVICE_BASE_URL`: Base URL for chat service (required for keyword search modes, overrides command line)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
 - `CHAT_SERVICE_MODEL`: Model name for chat service (optional, e.g., "gpt-4", "claude-3")
+- `EMBEDDING_SERVICE_BASE_URL`: Base URL for embedding service (required for vector search modes, overrides command line)
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
 - `EMBEDDING_SERVICE_MODEL`: Model name for embedding service (optional, e.g., "text-embedding-ada-002")
 
@@ -138,12 +140,12 @@ export QDRANT_BASE_URL=http://localhost:6333
 export QDRANT_API_KEY=your_qdrant_api_key
 export QDRANT_COLLECTION=documents
 export QDRANT_PAYLOAD_FIELD="full_text"
+export EMBEDDING_SERVICE_BASE_URL=http://localhost:8081/v1
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 
-# Using environment variables (no need for --qdrant-collection and --qdrant-payload-field)
+# Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, and --embedding-service-base-url)
 ./cardea-agentic-search qdrant \
-    --embedding-service http://localhost:8081/v1 \
     --limit 10 \
     --score-threshold 0.6
 
@@ -151,7 +153,7 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 ./cardea-agentic-search qdrant \
     --qdrant-collection documents \
     --qdrant-payload-field "full_text" \
-    --embedding-service http://localhost:8081/v1 \
+    --embedding-service-base-url http://localhost:8081/v1 \
     --limit 10 \
     --score-threshold 0.6
 ```
@@ -162,13 +164,13 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 export TIDB_CONNECTION="mysql://root:mypassword@localhost:4000/search_db"
 export TIDB_SSL_CA=/etc/ssl/certs/ca.pem
 export TIDB_TABLE_NAME=documents
+export CHAT_SERVICE_BASE_URL=http://localhost:8080/v1
 export CHAT_SERVICE_API_KEY=your_chat_api_key
 export CHAT_SERVICE_MODEL=gpt-4
 
-# Using environment variables (no need for --tidb-ssl-ca and --tidb-table-name)
+# Using environment variables (no need for --tidb-ssl-ca, --tidb-table-name, and --chat-service-base-url)
 ./cardea-agentic-search tidb \
     --tidb-search-field "content" \
-    --chat-service http://localhost:8080/v1 \
     --limit 20 \
     --score-threshold 0.4
 
@@ -177,7 +179,7 @@ export CHAT_SERVICE_MODEL=gpt-4
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --tidb-search-field "content" \
-    --chat-service http://localhost:8080/v1 \
+    --chat-service-base-url http://localhost:8080/v1 \
     --limit 20 \
     --score-threshold 0.4
 ```
@@ -192,16 +194,16 @@ export QDRANT_COLLECTION=documents
 export QDRANT_PAYLOAD_FIELD="full_text"
 export TIDB_SSL_CA=/etc/ssl/certs/ca.pem
 export TIDB_TABLE_NAME=documents
+export CHAT_SERVICE_BASE_URL=http://localhost:8080/v1
 export CHAT_SERVICE_API_KEY=your_chat_api_key
 export CHAT_SERVICE_MODEL=gpt-4
+export EMBEDDING_SERVICE_BASE_URL=http://localhost:8081/v1
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
 export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 
-# Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, --tidb-ssl-ca, --tidb-table-name)
+# Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, --tidb-ssl-ca, --tidb-table-name, --embedding-service-base-url, --chat-service-base-url)
 ./cardea-agentic-search search \
     --tidb-search-field "content" \
-    --chat-service http://localhost:8080/v1 \
-    --embedding-service http://localhost:8081/v1 \
     --limit 15 \
     --score-threshold 0.5
 
@@ -212,8 +214,8 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --tidb-search-field "content" \
-    --chat-service http://localhost:8080/v1 \
-    --embedding-service http://localhost:8081/v1 \
+    --chat-service-base-url http://localhost:8080/v1 \
+    --embedding-service-base-url http://localhost:8081/v1 \
     --limit 15 \
     --score-threshold 0.5
 ```
@@ -306,6 +308,7 @@ cp .env.example .env
 **For Vector Search (Qdrant mode):**
 
 - `QDRANT_BASE_URL`: Qdrant server URL (default: <http://127.0.0.1:6333>)
+- `EMBEDDING_SERVICE_BASE_URL`: Embedding service base URL (required for vector search modes, overrides command line)
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional - only needed if service requires authentication)
 - `QDRANT_API_KEY`: Qdrant API key (optional - only needed for authenticated Qdrant instances)
 - `QDRANT_COLLECTION`: Name of the collection to search in Qdrant (required for vector search modes, overrides command line)
@@ -314,6 +317,7 @@ cp .env.example .env
 **For Keyword Search (TiDB mode):**
 
 - `TIDB_CONNECTION`: TiDB connection string (format: `mysql://username:password@host:port/database`)
+- `CHAT_SERVICE_BASE_URL`: Chat service base URL (required for keyword search modes, overrides command line)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional - only needed if service requires authentication)
 - `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
 
@@ -325,7 +329,9 @@ cp .env.example .env
 - `QDRANT_PAYLOAD_FIELD`: The name of the field in the payload that contains the source of the document (required for vector search modes, overrides command line)
 - `TIDB_CONNECTION`: TiDB connection string
 - `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
+- `EMBEDDING_SERVICE_BASE_URL`: Embedding service base URL (required for vector search modes, overrides command line)
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
+- `CHAT_SERVICE_BASE_URL`: Chat service base URL (required for keyword search modes, overrides command line)
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
 
 **Configuration Priority (highest to lowest):**
@@ -346,6 +352,8 @@ QDRANT_BASE_URL=http://127.0.0.1:6333
 # QDRANT_API_KEY=your_qdrant_api_key  # Optional - only needed for authenticated Qdrant
 TIDB_CONNECTION=mysql://user:pass@host:4000/database
 # TIDB_SEARCH_FIELD=content  # Optional - field name for full-text search (default: "content")
+# CHAT_SERVICE_BASE_URL=https://api.openai.com/v1  # Optional - chat service base URL (can be overridden by command line)
+# EMBEDDING_SERVICE_BASE_URL=https://api.openai.com/v1  # Optional - embedding service base URL (can be overridden by command line)
 # EMBEDDING_SERVICE_API_KEY=your_embedding_key  # Optional - only needed if service requires auth
 # CHAT_SERVICE_API_KEY=your_chat_key  # Optional - only needed if service requires auth
 RUST_LOG=info

@@ -48,9 +48,9 @@ enum SearchMode {
         /// Score threshold for the results
         #[arg(long, default_value = "0.5")]
         score_threshold: f32,
-        /// The base URL of the embedding server, e.g., "https://api.openai.com/v1"
-        #[arg(long, required = true)]
-        embedding_service: String,
+        /// The base URL of the embedding server, e.g., "https://api.openai.com/v1" (can be overridden by EMBEDDING_SERVICE_BASE_URL env var)
+        #[arg(long, required = false)]
+        embedding_service_base_url: Option<String>,
     },
     /// Enable keyword search only
     Tidb {
@@ -71,9 +71,9 @@ enum SearchMode {
         /// Score threshold for the results
         #[arg(long, default_value = "0.5")]
         score_threshold: f32,
-        /// The base URL of the chat server, e.g., "https://api.openai.com/v1"
-        #[arg(long, required = true)]
-        chat_service: String,
+        /// The base URL of the chat server, e.g., "https://api.openai.com/v1" (can be overridden by CHAT_SERVICE_BASE_URL env var)
+        #[arg(long, required = false)]
+        chat_service_base_url: Option<String>,
     },
     /// Enable both vector and keyword search
     Search {
@@ -100,12 +100,12 @@ enum SearchMode {
         /// Score threshold for the results
         #[arg(long, default_value = "0.5")]
         score_threshold: f32,
-        /// The base URL of the chat server, e.g., "https://api.openai.com/v1"
-        #[arg(long, required = true)]
-        chat_service: String,
-        /// The base URL of the embedding server, e.g., "https://api.openai.com/v1"
-        #[arg(long, required = true)]
-        embedding_service: String,
+        /// The base URL of the chat server, e.g., "https://api.openai.com/v1" (can be overridden by CHAT_SERVICE_BASE_URL env var)
+        #[arg(long, required = false)]
+        chat_service_base_url: Option<String>,
+        /// The base URL of the embedding server, e.g., "https://api.openai.com/v1" (can be overridden by EMBEDDING_SERVICE_BASE_URL env var)
+        #[arg(long, required = false)]
+        embedding_service_base_url: Option<String>,
     },
 }
 
@@ -145,7 +145,7 @@ async fn main() -> anyhow::Result<()> {
             qdrant_payload_field,
             limit,
             score_threshold,
-            embedding_service,
+            embedding_service_base_url,
         } => {
             info!("Enabling vector search mode");
 
@@ -200,6 +200,28 @@ async fn main() -> anyhow::Result<()> {
             // parse api key
             let qdrant_api_key = env::var("QDRANT_API_KEY").ok();
 
+            // parse embedding service base url with priority: Environment Variable > Command Line > Error
+            let embedding_service_base_url = match env::var("EMBEDDING_SERVICE_BASE_URL") {
+                Ok(env_value) => {
+                    info!("Using EMBEDDING_SERVICE_BASE_URL from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match embedding_service_base_url {
+                    Some(arg_value) => {
+                        info!(
+                            "Using embedding_service_base_url from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        bail!(
+                            "EMBEDDING_SERVICE_BASE_URL environment variable or --embedding-service-base-url argument is required"
+                        );
+                    }
+                },
+            };
+
             // parse embedding service api key
             let embedding_service_api_key = env::var("EMBEDDING_SERVICE_API_KEY").ok();
 
@@ -218,7 +240,7 @@ async fn main() -> anyhow::Result<()> {
                 score_threshold,
                 chat_service: None,
                 embedding_service: Some(ServiceConfig {
-                    url: embedding_service,
+                    url: embedding_service_base_url,
                     api_key: embedding_service_api_key,
                     model: embedding_service_model,
                 }),
@@ -230,7 +252,7 @@ async fn main() -> anyhow::Result<()> {
             tidb_search_field,
             limit,
             score_threshold,
-            chat_service,
+            chat_service_base_url,
         } => {
             info!("Enabling keyword search mode");
 
@@ -314,6 +336,28 @@ async fn main() -> anyhow::Result<()> {
                 anyhow!(error_message)
             })?;
 
+            // parse chat service base url with priority: Environment Variable > Command Line > Error
+            let chat_service_base_url = match env::var("CHAT_SERVICE_BASE_URL") {
+                Ok(env_value) => {
+                    info!("Using CHAT_SERVICE_BASE_URL from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match chat_service_base_url {
+                    Some(arg_value) => {
+                        info!(
+                            "Using chat_service_base_url from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        bail!(
+                            "CHAT_SERVICE_BASE_URL environment variable or --chat-service-base-url argument is required"
+                        );
+                    }
+                },
+            };
+
             // parse chat service api key
             let chat_service_api_key = env::var("CHAT_SERVICE_API_KEY").ok();
 
@@ -357,7 +401,7 @@ async fn main() -> anyhow::Result<()> {
                 limit,
                 score_threshold,
                 chat_service: Some(ServiceConfig {
-                    url: chat_service,
+                    url: chat_service_base_url,
                     api_key: chat_service_api_key,
                     model: chat_service_model,
                 }),
@@ -372,8 +416,8 @@ async fn main() -> anyhow::Result<()> {
             tidb_search_field,
             limit,
             score_threshold,
-            chat_service,
-            embedding_service,
+            chat_service_base_url,
+            embedding_service_base_url,
         } => {
             info!("Enabling both vector and keyword search modes");
 
@@ -508,11 +552,55 @@ async fn main() -> anyhow::Result<()> {
                 anyhow!(error_message)
             })?;
 
+            // parse chat service base url with priority: Environment Variable > Command Line > Error
+            let chat_service_base_url = match env::var("CHAT_SERVICE_BASE_URL") {
+                Ok(env_value) => {
+                    info!("Using CHAT_SERVICE_BASE_URL from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match chat_service_base_url {
+                    Some(arg_value) => {
+                        info!(
+                            "Using chat_service_base_url from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        bail!(
+                            "CHAT_SERVICE_BASE_URL environment variable or --chat-service-base-url argument is required"
+                        );
+                    }
+                },
+            };
+
             // parse chat service api key
             let chat_service_api_key = env::var("CHAT_SERVICE_API_KEY").ok();
 
             // parse chat service model
             let chat_service_model = env::var("CHAT_SERVICE_MODEL").ok();
+
+            // parse embedding service base url with priority: Environment Variable > Command Line > Error
+            let embedding_service_base_url = match env::var("EMBEDDING_SERVICE_BASE_URL") {
+                Ok(env_value) => {
+                    info!("Using EMBEDDING_SERVICE_BASE_URL from environment: {}", env_value);
+                    env_value
+                }
+                Err(_) => match embedding_service_base_url {
+                    Some(arg_value) => {
+                        info!(
+                            "Using embedding_service_base_url from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        bail!(
+                            "EMBEDDING_SERVICE_BASE_URL environment variable or --embedding-service-base-url argument is required"
+                        );
+                    }
+                },
+            };
 
             // parse embedding service api key
             let embedding_service_api_key = env::var("EMBEDDING_SERVICE_API_KEY").ok();
@@ -562,12 +650,12 @@ async fn main() -> anyhow::Result<()> {
                 limit,
                 score_threshold,
                 chat_service: Some(ServiceConfig {
-                    url: chat_service,
+                    url: chat_service_base_url,
                     api_key: chat_service_api_key,
                     model: chat_service_model,
                 }),
                 embedding_service: Some(ServiceConfig {
-                    url: embedding_service,
+                    url: embedding_service_base_url,
                     api_key: embedding_service_api_key,
                     model: embedding_service_model,
                 }),
