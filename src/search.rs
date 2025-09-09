@@ -194,7 +194,7 @@ impl AgenticSearchServer {
 
                 // create a embedding request
                 let embedding_request = EmbeddingRequest {
-                    model: None,
+                    model: config.model.clone(),
                     input: InputText::String(query.as_ref().to_string()),
                     encoding_format: None,
                     user: None,
@@ -428,7 +428,13 @@ impl AgenticSearchServer {
         );
 
         // create a request
-        let request = ChatCompletionRequestBuilder::new(&[user_message]).build();
+        let request = if let Some(model) = &config.model {
+            ChatCompletionRequestBuilder::new(&[user_message])
+                .with_model(model)
+                .build()
+        } else {
+            ChatCompletionRequestBuilder::new(&[user_message]).build()
+        };
 
         let chat_service_url = format!("{}/chat/completions", config.url.trim_end_matches('/'));
         debug!(

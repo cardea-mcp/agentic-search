@@ -157,13 +157,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match qdrant_collection {
                     Some(arg_value) => {
-                        info!("Using qdrant_collection from command line argument: {}", arg_value);
+                        info!(
+                            "Using qdrant_collection from command line argument: {}",
+                            arg_value
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("QDRANT_COLLECTION environment variable or --qdrant-collection argument is required");
+                        bail!(
+                            "QDRANT_COLLECTION environment variable or --qdrant-collection argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine payload field with priority: Environment Variable > Command Line > Error
@@ -174,13 +179,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match qdrant_payload_field {
                     Some(arg_value) => {
-                        info!("Using qdrant_payload_field from command line argument: {}", arg_value);
+                        info!(
+                            "Using qdrant_payload_field from command line argument: {}",
+                            arg_value
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("QDRANT_PAYLOAD_FIELD environment variable or --qdrant-payload-field argument is required");
+                        bail!(
+                            "QDRANT_PAYLOAD_FIELD environment variable or --qdrant-payload-field argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // parse base url
@@ -192,6 +202,9 @@ async fn main() -> anyhow::Result<()> {
 
             // parse embedding service api key
             let embedding_service_api_key = env::var("EMBEDDING_SERVICE_API_KEY").ok();
+
+            // parse embedding service model
+            let embedding_service_model = env::var("EMBEDDING_SERVICE_MODEL").ok();
 
             AgenticSearchConfig {
                 qdrant_config: Some(QdrantConfig {
@@ -207,6 +220,7 @@ async fn main() -> anyhow::Result<()> {
                 embedding_service: Some(ServiceConfig {
                     url: embedding_service,
                     api_key: embedding_service_api_key,
+                    model: embedding_service_model,
                 }),
             }
         }
@@ -228,13 +242,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match tidb_ssl_ca {
                     Some(arg_value) => {
-                        info!("Using tidb_ssl_ca from command line argument: {}", arg_value.display());
+                        info!(
+                            "Using tidb_ssl_ca from command line argument: {}",
+                            arg_value.display()
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("TIDB_SSL_CA environment variable or --tidb-ssl-ca argument is required");
+                        bail!(
+                            "TIDB_SSL_CA environment variable or --tidb-ssl-ca argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine table name with priority: Environment Variable > Command Line > Error
@@ -245,13 +264,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match tidb_table_name {
                     Some(arg_value) => {
-                        info!("Using tidb_table_name from command line argument: {}", arg_value);
+                        info!(
+                            "Using tidb_table_name from command line argument: {}",
+                            arg_value
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("TIDB_TABLE_NAME environment variable or --tidb-table-name argument is required");
+                        bail!(
+                            "TIDB_TABLE_NAME environment variable or --tidb-table-name argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine content field with priority: Environment Variable > Command Line > Default
@@ -293,6 +317,9 @@ async fn main() -> anyhow::Result<()> {
             // parse chat service api key
             let chat_service_api_key = env::var("CHAT_SERVICE_API_KEY").ok();
 
+            // parse chat service model
+            let chat_service_model = env::var("CHAT_SERVICE_MODEL").ok();
+
             CryptoProvider::install_default(default_provider()).map_err(|e| {
                 let err_msg = format!("Failed to install default crypto provider: {e:?}");
                 error!("{}", err_msg);
@@ -332,6 +359,7 @@ async fn main() -> anyhow::Result<()> {
                 chat_service: Some(ServiceConfig {
                     url: chat_service,
                     api_key: chat_service_api_key,
+                    model: chat_service_model,
                 }),
                 embedding_service: None,
             }
@@ -357,13 +385,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match qdrant_collection {
                     Some(arg_value) => {
-                        info!("Using qdrant_collection from command line argument: {}", arg_value);
+                        info!(
+                            "Using qdrant_collection from command line argument: {}",
+                            arg_value
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("QDRANT_COLLECTION environment variable or --qdrant-collection argument is required");
+                        bail!(
+                            "QDRANT_COLLECTION environment variable or --qdrant-collection argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine payload field with priority: Environment Variable > Command Line > Error
@@ -374,13 +407,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match qdrant_payload_field {
                     Some(arg_value) => {
-                        info!("Using qdrant_payload_field from command line argument: {}", arg_value);
+                        info!(
+                            "Using qdrant_payload_field from command line argument: {}",
+                            arg_value
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("QDRANT_PAYLOAD_FIELD environment variable or --qdrant-payload-field argument is required");
+                        bail!(
+                            "QDRANT_PAYLOAD_FIELD environment variable or --qdrant-payload-field argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine SSL CA path with priority: Environment Variable > Command Line > Error
@@ -391,13 +429,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match tidb_ssl_ca {
                     Some(arg_value) => {
-                        info!("Using tidb_ssl_ca from command line argument: {}", arg_value.display());
+                        info!(
+                            "Using tidb_ssl_ca from command line argument: {}",
+                            arg_value.display()
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("TIDB_SSL_CA environment variable or --tidb-ssl-ca argument is required");
+                        bail!(
+                            "TIDB_SSL_CA environment variable or --tidb-ssl-ca argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine table name with priority: Environment Variable > Command Line > Error
@@ -408,13 +451,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => match tidb_table_name {
                     Some(arg_value) => {
-                        info!("Using tidb_table_name from command line argument: {}", arg_value);
+                        info!(
+                            "Using tidb_table_name from command line argument: {}",
+                            arg_value
+                        );
                         arg_value
                     }
                     None => {
-                        bail!("TIDB_TABLE_NAME environment variable or --tidb-table-name argument is required");
+                        bail!(
+                            "TIDB_TABLE_NAME environment variable or --tidb-table-name argument is required"
+                        );
                     }
-                }
+                },
             };
 
             // Determine content field with priority: Environment Variable > Command Line > Default
@@ -463,8 +511,14 @@ async fn main() -> anyhow::Result<()> {
             // parse chat service api key
             let chat_service_api_key = env::var("CHAT_SERVICE_API_KEY").ok();
 
+            // parse chat service model
+            let chat_service_model = env::var("CHAT_SERVICE_MODEL").ok();
+
             // parse embedding service api key
             let embedding_service_api_key = env::var("EMBEDDING_SERVICE_API_KEY").ok();
+
+            // parse embedding service model
+            let embedding_service_model = env::var("EMBEDDING_SERVICE_MODEL").ok();
 
             CryptoProvider::install_default(default_provider()).map_err(|e| {
                 let err_msg = format!("Failed to install default crypto provider: {e:?}");
@@ -510,10 +564,12 @@ async fn main() -> anyhow::Result<()> {
                 chat_service: Some(ServiceConfig {
                     url: chat_service,
                     api_key: chat_service_api_key,
+                    model: chat_service_model,
                 }),
                 embedding_service: Some(ServiceConfig {
                     url: embedding_service,
                     api_key: embedding_service_api_key,
+                    model: embedding_service_model,
                 }),
             }
         }
@@ -581,6 +637,7 @@ pub struct TiDBConfig {
 pub struct ServiceConfig {
     pub url: String,
     pub api_key: Option<String>,
+    pub model: Option<String>,
 }
 
 fn parse_tidb_conn_str(conn_str: &str) -> Option<(String, String, String, String, String)> {

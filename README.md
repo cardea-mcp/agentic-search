@@ -125,7 +125,9 @@ These options apply to all search modes:
 #### For External Services
 
 - `CHAT_SERVICE_API_KEY`: API key for chat service (optional)
+- `CHAT_SERVICE_MODEL`: Model name for chat service (optional, e.g., "gpt-4", "claude-3")
 - `EMBEDDING_SERVICE_API_KEY`: API key for embedding service (optional)
+- `EMBEDDING_SERVICE_MODEL`: Model name for embedding service (optional, e.g., "text-embedding-ada-002")
 
 ## Examples
 
@@ -137,6 +139,7 @@ export QDRANT_API_KEY=your_qdrant_api_key
 export QDRANT_COLLECTION=documents
 export QDRANT_PAYLOAD_FIELD="full_text"
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
+export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 
 # Using environment variables (no need for --qdrant-collection and --qdrant-payload-field)
 ./cardea-agentic-search qdrant \
@@ -160,6 +163,7 @@ export TIDB_CONNECTION="mysql://root:mypassword@localhost:4000/search_db"
 export TIDB_SSL_CA=/etc/ssl/certs/ca.pem
 export TIDB_TABLE_NAME=documents
 export CHAT_SERVICE_API_KEY=your_chat_api_key
+export CHAT_SERVICE_MODEL=gpt-4
 
 # Using environment variables (no need for --tidb-ssl-ca and --tidb-table-name)
 ./cardea-agentic-search tidb \
@@ -189,7 +193,9 @@ export QDRANT_PAYLOAD_FIELD="full_text"
 export TIDB_SSL_CA=/etc/ssl/certs/ca.pem
 export TIDB_TABLE_NAME=documents
 export CHAT_SERVICE_API_KEY=your_chat_api_key
+export CHAT_SERVICE_MODEL=gpt-4
 export EMBEDDING_SERVICE_API_KEY=your_embedding_api_key
+export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 
 # Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, --tidb-ssl-ca, --tidb-table-name)
 ./cardea-agentic-search search \
