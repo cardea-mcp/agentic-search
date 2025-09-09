@@ -203,7 +203,10 @@ async fn main() -> anyhow::Result<()> {
             // parse embedding service base url with priority: Environment Variable > Command Line > Error
             let embedding_service_base_url = match env::var("EMBEDDING_SERVICE_BASE_URL") {
                 Ok(env_value) => {
-                    info!("Using EMBEDDING_SERVICE_BASE_URL from environment: {}", env_value);
+                    info!(
+                        "Using EMBEDDING_SERVICE_BASE_URL from environment: {}",
+                        env_value
+                    );
                     env_value
                 }
                 Err(_) => match embedding_service_base_url {
@@ -339,7 +342,10 @@ async fn main() -> anyhow::Result<()> {
             // parse chat service base url with priority: Environment Variable > Command Line > Error
             let chat_service_base_url = match env::var("CHAT_SERVICE_BASE_URL") {
                 Ok(env_value) => {
-                    info!("Using CHAT_SERVICE_BASE_URL from environment: {}", env_value);
+                    info!(
+                        "Using CHAT_SERVICE_BASE_URL from environment: {}",
+                        env_value
+                    );
                     env_value
                 }
                 Err(_) => match chat_service_base_url {
@@ -555,7 +561,10 @@ async fn main() -> anyhow::Result<()> {
             // parse chat service base url with priority: Environment Variable > Command Line > Error
             let chat_service_base_url = match env::var("CHAT_SERVICE_BASE_URL") {
                 Ok(env_value) => {
-                    info!("Using CHAT_SERVICE_BASE_URL from environment: {}", env_value);
+                    info!(
+                        "Using CHAT_SERVICE_BASE_URL from environment: {}",
+                        env_value
+                    );
                     env_value
                 }
                 Err(_) => match chat_service_base_url {
@@ -583,7 +592,10 @@ async fn main() -> anyhow::Result<()> {
             // parse embedding service base url with priority: Environment Variable > Command Line > Error
             let embedding_service_base_url = match env::var("EMBEDDING_SERVICE_BASE_URL") {
                 Ok(env_value) => {
-                    info!("Using EMBEDDING_SERVICE_BASE_URL from environment: {}", env_value);
+                    info!(
+                        "Using EMBEDDING_SERVICE_BASE_URL from environment: {}",
+                        env_value
+                    );
                     env_value
                 }
                 Err(_) => match embedding_service_base_url {
