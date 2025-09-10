@@ -201,18 +201,26 @@ impl AgenticSearchServer {
                 };
 
                 let response = match &config.api_key {
-                    Some(api_key) => reqwest::Client::new()
-                        .post(&embedding_service_url)
-                        .header(CONTENT_TYPE, "application/json")
-                        .header(AUTHORIZATION, api_key)
-                        .json(&embedding_request)
-                        .send()
-                        .await
-                        .map_err(|e| {
-                            let err_msg = format!("Failed to send the embedding request: {e}");
-                            error!("{}", err_msg);
-                            McpError::new(ErrorCode::INTERNAL_ERROR, err_msg, None)
-                        })?,
+                    Some(api_key) => {
+                        let auth_info = if api_key.starts_with("Bearer ") {
+                            api_key.clone()
+                        } else {
+                            format!("Bearer {api_key}")
+                        };
+
+                        reqwest::Client::new()
+                            .post(&embedding_service_url)
+                            .header(CONTENT_TYPE, "application/json")
+                            .header(AUTHORIZATION, auth_info)
+                            .json(&embedding_request)
+                            .send()
+                            .await
+                            .map_err(|e| {
+                                let err_msg = format!("Failed to send the embedding request: {e}");
+                                error!("{}", err_msg);
+                                McpError::new(ErrorCode::INTERNAL_ERROR, err_msg, None)
+                            })?
+                    }
                     None => reqwest::Client::new()
                         .post(&embedding_service_url)
                         .header(CONTENT_TYPE, "application/json")
@@ -282,18 +290,26 @@ impl AgenticSearchServer {
                 });
 
                 let response = match &qdrant_config.api_key {
-                    Some(api_key) => reqwest::Client::new()
-                        .post(&url)
-                        .header("api-key", api_key)
-                        .header("Content-Type", "application/json")
-                        .json(&params)
-                        .send()
-                        .await
-                        .map_err(|e| {
-                            let err_msg = format!("Failed to search points: {e}");
-                            error!("{}", err_msg);
-                            McpError::new(ErrorCode::INTERNAL_ERROR, err_msg, None)
-                        })?,
+                    Some(api_key) => {
+                        let auth_info = if api_key.starts_with("Bearer ") {
+                            api_key.clone()
+                        } else {
+                            format!("Bearer {api_key}")
+                        };
+
+                        reqwest::Client::new()
+                            .post(&url)
+                            .header("api-key", auth_info)
+                            .header("Content-Type", "application/json")
+                            .json(&params)
+                            .send()
+                            .await
+                            .map_err(|e| {
+                                let err_msg = format!("Failed to search points: {e}");
+                                error!("{}", err_msg);
+                                McpError::new(ErrorCode::INTERNAL_ERROR, err_msg, None)
+                            })?
+                    }
                     None => reqwest::Client::new()
                         .post(&url)
                         .header("Content-Type", "application/json")
@@ -431,6 +447,7 @@ impl AgenticSearchServer {
         let request = if let Some(model) = &config.model {
             ChatCompletionRequestBuilder::new(&[user_message])
                 .with_model(model)
+                .with_max_completion_tokens(3200)
                 .build()
         } else {
             ChatCompletionRequestBuilder::new(&[user_message]).build()
@@ -442,18 +459,26 @@ impl AgenticSearchServer {
             chat_service_url,
         );
         let response = match &config.api_key {
-            Some(api_key) => reqwest::Client::new()
-                .post(&chat_service_url)
-                .header(reqwest::header::CONTENT_TYPE, "application/json")
-                .header(reqwest::header::AUTHORIZATION, api_key)
-                .json(&request)
-                .send()
-                .await
-                .map_err(|e| {
-                    let err_msg = format!("Failed to send the chat request: {e}");
-                    error!("{}", err_msg);
-                    McpError::new(ErrorCode::INTERNAL_ERROR, err_msg, None)
-                })?,
+            Some(api_key) => {
+                let auth_info = if api_key.starts_with("Bearer ") {
+                    api_key.clone()
+                } else {
+                    format!("Bearer {api_key}")
+                };
+
+                reqwest::Client::new()
+                    .post(&chat_service_url)
+                    .header(reqwest::header::CONTENT_TYPE, "application/json")
+                    .header(reqwest::header::AUTHORIZATION, auth_info)
+                    .json(&request)
+                    .send()
+                    .await
+                    .map_err(|e| {
+                        let err_msg = format!("Failed to send the chat request: {e}");
+                        error!("{}", err_msg);
+                        McpError::new(ErrorCode::INTERNAL_ERROR, err_msg, None)
+                    })?
+            }
             None => reqwest::Client::new()
                 .post(&chat_service_url)
                 .header(reqwest::header::CONTENT_TYPE, "application/json")
