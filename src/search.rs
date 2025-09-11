@@ -508,6 +508,77 @@ impl AgenticSearchServer {
         Ok(content.to_string())
     }
 
+    /// Extract rows from TiDB query results using generic natural language format
+    ///
+    /// This method converts MySQL rows to human-readable strings suitable for LLM processing
+    fn extract_rows_generic_natural_language(rows: Vec<mysql::Row>) -> Vec<String> {
+        let mut results = Vec::new();
+
+        for (row_index, row) in rows.iter().enumerate() {
+            let mut field_parts = Vec::new();
+            let columns = row.columns_ref();
+
+            // 文档头部
+            field_parts.push(format!("=== Document {} ===", row_index + 1));
+
+            for (index, column) in columns.iter().enumerate() {
+                let column_name = column.name_str();
+
+                if let Some(value) = row.get::<mysql::Value, _>(index) {
+                    let text_value = match value {
+                        mysql::Value::Bytes(bytes) => String::from_utf8_lossy(&bytes).to_string(),
+                        mysql::Value::NULL => continue,
+                        mysql::Value::Int(i) => i.to_string(),
+                        mysql::Value::UInt(u) => u.to_string(),
+                        mysql::Value::Float(f) => f.to_string(),
+                        mysql::Value::Double(d) => d.to_string(),
+                        mysql::Value::Date(year, month, day, hour, minute, second, microsecond) => {
+                            format!(
+                                "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:06}",
+                                year, month, day, hour, minute, second, microsecond
+                            )
+                        }
+                        _ => format!("{:?}", value),
+                    };
+
+                    if !text_value.trim().is_empty() {
+                        // 将字段名转换为更友好的格式
+                        let friendly_name = column_name
+                            .replace("_", " ")
+                            .split_whitespace()
+                            .map(|word| {
+                                let mut chars = word.chars();
+                                match chars.next() {
+                                    None => String::new(),
+                                    Some(first) => {
+                                        first.to_uppercase().collect::<String>() + chars.as_str()
+                                    }
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join(" ");
+
+                        // 根据内容长度决定格式
+                        let formatted_field = if text_value.len() > 100 {
+                            // 长文本用换行格式
+                            format!("{}:\n{}", friendly_name, text_value)
+                        } else {
+                            // 短文本用同行格式
+                            format!("{}: {}", friendly_name, text_value)
+                        };
+
+                        field_parts.push(formatted_field);
+                    }
+                }
+            }
+
+            let combined_string = field_parts.join("\n\n");
+            results.push(combined_string);
+        }
+
+        results
+    }
+
     /// Search in TiDB using the keywords
     ///
     /// # Arguments
@@ -593,27 +664,52 @@ impl AgenticSearchServer {
                 // execute full-text search
                 let query = keywords.as_ref().replace("'", "''"); // ! This is a workaround for the issue that the query contains single quotes.
 
-                debug!("\nExecuting full-text search for '{}'...", query);
-                let search_sql = format!(
-                    r"SELECT * FROM {}
-                WHERE fts_match_word('{}', {})
-                ORDER BY fts_match_word('{}', {})
-                DESC LIMIT {}",
-                    tidb_config.table_name,
-                    query,
-                    tidb_config.search_field,
-                    query,
-                    tidb_config.search_field,
-                    self.config.limit
+                debug!(
+                    "\nExecuting full-text search in table {} for '{}'...",
+                    tidb_config.table_name, query
+                );
+                debug!(
+                    "Search field: {}, return field: {}",
+                    tidb_config.search_field, tidb_config.return_field
                 );
 
-                conn.query(&search_sql).map_err(|e| {
+                let search_sql = format!(
+                    r"SELECT `{table}`.`{return_field}`
+                    FROM `{table}`
+                    WHERE fts_match_word('{query}', `{table}`.`{search_field}`)
+                    ORDER BY fts_match_word('{query}', `{table}`.`{search_field}`) DESC
+                    LIMIT {limit}",
+                    table = tidb_config.table_name,
+                    return_field = tidb_config.return_field,
+                    query = query,
+                    search_field = tidb_config.search_field,
+                    limit = self.config.limit
+                );
+
+                // execute the query and get the Row results
+                let rows: Vec<mysql::Row> = conn.query(&search_sql).map_err(|e| {
                     let error_message = format!("Failed to execute search: {e}");
-
                     error!(error_message);
-
                     McpError::new(ErrorCode::INTERNAL_ERROR, error_message, None)
-                })
+                })?;
+
+                info!("Query returned {} rows", rows.len());
+
+                // convert the Row results to formatted strings
+                let formatted_results = Self::extract_rows_generic_natural_language(rows);
+
+                // convert formatted strings to TidbSearchHit instances
+                let mut tidb_hits = Vec::new();
+                for (index, formatted_text) in formatted_results.into_iter().enumerate() {
+                    let hit = TidbSearchHit {
+                        id: index as i32,
+                        title: format!("Search Result {}", index + 1),
+                        content: formatted_text,
+                    };
+                    tidb_hits.push(hit);
+                }
+
+                Ok(tidb_hits)
             }
             None => {
                 let error_message = "TiDB config is not set";
