@@ -60,6 +60,7 @@ These options apply to all search modes:
     --tidb-ssl-ca /path/to/ca.pem \
     --tidb-table-name my_table \
     --tidb-search-field "content" \
+    --tidb-return-field "*" \
     --chat-service-base-url http://localhost:8080/v1 \
     --limit 15
 ```
@@ -70,7 +71,8 @@ These options apply to all search modes:
   - On macOS: typically `/etc/ssl/cert.pem`
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
-- `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
+- `--tidb-search-field`: Field name for full-text search content (optional, default: "content", overridden by TIDB_SEARCH_FIELD env var)
+- `--tidb-return-field`: Field name to return from TiDB query results (optional, default: "*", overridden by TIDB_RETURN_FIELD env var)
 - `--chat-service-base-url`: Chat service base URL (required if CHAT_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
@@ -84,6 +86,7 @@ These options apply to all search modes:
     --tidb-ssl-ca /path/to/ca.pem \
     --tidb-table-name my_table \
     --tidb-search-field "content" \
+    --tidb-return-field "*" \
     --chat-service-base-url http://localhost:8080/v1 \
     --embedding-service-base-url http://localhost:8081/v1 \
     --limit 25
@@ -97,7 +100,8 @@ These options apply to all search modes:
   - On macOS: typically `/etc/ssl/cert.pem`
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
-- `--tidb-search-field`: Field name for full-text search content (optional, default: "content", can be overridden by TIDB_SEARCH_FIELD env var)
+- `--tidb-search-field`: Field name for full-text search content (optional, default: "content", overridden by TIDB_SEARCH_FIELD env var)
+- `--tidb-return-field`: Field name to return from TiDB query results (optional, default: "*", overridden by TIDB_RETURN_FIELD env var)
 - `--chat-service-base-url`: Chat service base URL (required if CHAT_SERVICE_BASE_URL env var not set)
 - `--embedding-service-base-url`: Embedding service base URL (required if EMBEDDING_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
@@ -120,6 +124,7 @@ These options apply to all search modes:
 - `TIDB_SSL_CA`: Path to the SSL CA certificate (required for TiDB modes, overrides command line)
 - `TIDB_TABLE_NAME`: Table name to search in TiDB (required for TiDB modes, overrides command line)
 - `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
+- `TIDB_RETURN_FIELD`: Field name to return from TiDB query results (optional, default: "*")
 - `PROMPT_KEYWORD_EXTRACTOR`: Custom prompt for keyword extraction (optional, uses built-in default if not set)
 
 #### For External Services
@@ -171,6 +176,7 @@ export CHAT_SERVICE_MODEL=gpt-4
 # Using environment variables (no need for --tidb-ssl-ca, --tidb-table-name, and --chat-service-base-url)
 ./cardea-agentic-search tidb \
     --tidb-search-field "content" \
+    --tidb-return-field "*" \
     --limit 20 \
     --score-threshold 0.4
 
@@ -179,6 +185,7 @@ export CHAT_SERVICE_MODEL=gpt-4
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --tidb-search-field "content" \
+    --tidb-return-field "*" \
     --chat-service-base-url http://localhost:8080/v1 \
     --limit 20 \
     --score-threshold 0.4
@@ -204,6 +211,7 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 # Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, --tidb-ssl-ca, --tidb-table-name, --embedding-service-base-url, --chat-service-base-url)
 ./cardea-agentic-search search \
     --tidb-search-field "content" \
+    --tidb-return-field "*" \
     --limit 15 \
     --score-threshold 0.5
 
@@ -214,6 +222,7 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --tidb-search-field "content" \
+    --tidb-return-field "*" \
     --chat-service-base-url http://localhost:8080/v1 \
     --embedding-service-base-url http://localhost:8081/v1 \
     --limit 15 \
@@ -352,6 +361,7 @@ QDRANT_BASE_URL=http://127.0.0.1:6333
 # QDRANT_API_KEY=your_qdrant_api_key  # Optional - only needed for authenticated Qdrant
 TIDB_CONNECTION=mysql://user:pass@host:4000/database
 # TIDB_SEARCH_FIELD=content  # Optional - field name for full-text search (default: "content")
+# TIDB_RETURN_FIELD=*  # Optional - field name to return from TiDB query results (default: "*")
 # CHAT_SERVICE_BASE_URL=https://api.openai.com/v1  # Optional - chat service base URL (can be overridden by command line)
 # EMBEDDING_SERVICE_BASE_URL=https://api.openai.com/v1  # Optional - embedding service base URL (can be overridden by command line)
 # EMBEDDING_SERVICE_API_KEY=your_embedding_key  # Optional - only needed if service requires auth
@@ -365,16 +375,17 @@ RUST_LOG=info
 ```bash
 # Example 1: Using environment variable (highest priority)
 export TIDB_SEARCH_FIELD="article_text"
-./cardea-agentic-search tidb --tidb-search-field "description" [other options...]
-# Result: Uses "article_text" from environment variable
+export TIDB_RETURN_FIELD="title,content,source"
+./cardea-agentic-search tidb --tidb-search-field "description" --tidb-return-field "summary" [other options...]
+# Result: Uses "article_text" and "title,content,source" from environment variables
 
 # Example 2: Using command line argument
-./cardea-agentic-search tidb --tidb-search-field "full_text" [other options...]
-# Result: Uses "full_text" from command line
+./cardea-agentic-search tidb --tidb-search-field "full_text" --tidb-return-field "title,content" [other options...]
+# Result: Uses "full_text" and "title,content" from command line
 
 # Example 3: Using default value
 ./cardea-agentic-search tidb [other options...]
-# Result: Uses "content" (default value)
+# Result: Uses "content" (search field default) and "*" (return field default)
 ```
 
 #### Security Best Practices

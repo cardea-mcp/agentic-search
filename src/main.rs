@@ -63,8 +63,11 @@ enum SearchMode {
         #[arg(long, required = false)]
         tidb_table_name: Option<String>,
         /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
-        #[arg(long, default_value = "content")]
-        tidb_search_field: String,
+        #[arg(long, required = false)]
+        tidb_search_field: Option<String>,
+        /// Field name to return from TiDB query results (can be overridden by TIDB_RETURN_FIELD env var)
+        #[arg(long, required = false)]
+        tidb_return_field: Option<String>,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -92,8 +95,11 @@ enum SearchMode {
         #[arg(long, required = false)]
         tidb_table_name: Option<String>,
         /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
-        #[arg(long, default_value = "content")]
-        tidb_search_field: String,
+        #[arg(long, required = false)]
+        tidb_search_field: Option<String>,
+        /// Field name to return from TiDB query results (can be overridden by TIDB_RETURN_FIELD env var)
+        #[arg(long, required = false)]
+        tidb_return_field: Option<String>,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -253,6 +259,7 @@ async fn main() -> anyhow::Result<()> {
             tidb_ssl_ca,
             tidb_table_name,
             tidb_search_field,
+            tidb_return_field,
             limit,
             score_threshold,
             chat_service_base_url,
@@ -309,13 +316,40 @@ async fn main() -> anyhow::Result<()> {
                     info!("Using TIDB_SEARCH_FIELD from environment: {}", env_value);
                     env_value
                 }
-                Err(_) => {
-                    info!(
-                        "Using TIDB_SEARCH_FIELD from command line argument: {}",
-                        tidb_search_field
-                    );
-                    tidb_search_field
+                Err(_) => match tidb_search_field {
+                    Some(arg_value) => {
+                        info!(
+                            "Using TIDB_SEARCH_FIELD from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        info!("Using TIDB_SEARCH_FIELD default value: content");
+                        "content".to_string()
+                    }
+                },
+            };
+
+            // Determine return field with priority: Environment Variable > Command Line > Default
+            let tidb_return_field = match env::var("TIDB_RETURN_FIELD") {
+                Ok(env_value) => {
+                    info!("Using TIDB_RETURN_FIELD from environment: {}", env_value);
+                    env_value
                 }
+                Err(_) => match tidb_return_field {
+                    Some(arg_value) => {
+                        info!(
+                            "Using TIDB_RETURN_FIELD from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        info!("Using TIDB_RETURN_FIELD default value: *");
+                        "*".to_string()
+                    }
+                },
             };
 
             // parse connection string
@@ -386,7 +420,8 @@ async fn main() -> anyhow::Result<()> {
                 .db_name(Some(database.clone()))
                 .ssl_opts(Some(
                     SslOpts::default().with_root_cert_path(Some(tidb_ssl_ca)),
-                ));
+                ))
+                .init(vec!["SET NAMES utf8mb4".to_string()]);
 
             // create connection pool
             info!("Creating connection pool...");
@@ -403,6 +438,7 @@ async fn main() -> anyhow::Result<()> {
                     table_name: tidb_table_name,
                     pool,
                     search_field: tidb_search_field,
+                    return_field: tidb_return_field,
                 }),
                 limit,
                 score_threshold,
@@ -420,6 +456,7 @@ async fn main() -> anyhow::Result<()> {
             tidb_ssl_ca,
             tidb_table_name,
             tidb_search_field,
+            tidb_return_field,
             limit,
             score_threshold,
             chat_service_base_url,
@@ -521,13 +558,40 @@ async fn main() -> anyhow::Result<()> {
                     info!("Using TIDB_SEARCH_FIELD from environment: {}", env_value);
                     env_value
                 }
-                Err(_) => {
-                    info!(
-                        "Using TIDB_SEARCH_FIELD from command line argument: {}",
-                        tidb_search_field
-                    );
-                    tidb_search_field
+                Err(_) => match tidb_search_field {
+                    Some(arg_value) => {
+                        info!(
+                            "Using TIDB_SEARCH_FIELD from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        info!("Using TIDB_SEARCH_FIELD default value: content");
+                        "content".to_string()
+                    }
+                },
+            };
+
+            // Determine return field with priority: Environment Variable > Command Line > Default
+            let tidb_return_field = match env::var("TIDB_RETURN_FIELD") {
+                Ok(env_value) => {
+                    info!("Using TIDB_RETURN_FIELD from environment: {}", env_value);
+                    env_value
                 }
+                Err(_) => match tidb_return_field {
+                    Some(arg_value) => {
+                        info!(
+                            "Using TIDB_RETURN_FIELD from command line argument: {}",
+                            arg_value
+                        );
+                        arg_value
+                    }
+                    None => {
+                        info!("Using TIDB_RETURN_FIELD default value: *");
+                        "*".to_string()
+                    }
+                },
             };
 
             // parse base url
@@ -658,6 +722,7 @@ async fn main() -> anyhow::Result<()> {
                     table_name: tidb_table_name,
                     pool,
                     search_field: tidb_search_field,
+                    return_field: tidb_return_field,
                 }),
                 limit,
                 score_threshold,
@@ -731,6 +796,7 @@ pub struct TiDBConfig {
     pub table_name: String,
     pub pool: Pool,
     pub search_field: String,
+    pub return_field: String,
 }
 
 #[derive(Debug, Clone)]
