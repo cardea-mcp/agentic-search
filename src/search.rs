@@ -673,14 +673,24 @@ impl AgenticSearchServer {
                     tidb_config.search_field, tidb_config.return_field
                 );
 
+                let select_clause = if tidb_config.return_field == "*" {
+                    "*".to_string()
+                } else {
+                    format!(
+                        "`{table}`.`{return_field}`",
+                        table = tidb_config.table_name,
+                        return_field = tidb_config.return_field
+                    )
+                };
+
                 let search_sql = format!(
-                    r"SELECT `{table}`.`{return_field}`
+                    r"SELECT {select_clause}
                     FROM `{table}`
                     WHERE fts_match_word('{query}', `{table}`.`{search_field}`)
                     ORDER BY fts_match_word('{query}', `{table}`.`{search_field}`) DESC
                     LIMIT {limit}",
+                    select_clause = select_clause,
                     table = tidb_config.table_name,
-                    return_field = tidb_config.return_field,
                     query = query,
                     search_field = tidb_config.search_field,
                     limit = self.config.limit
