@@ -65,9 +65,9 @@ enum SearchMode {
         /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
         #[arg(long, required = false)]
         tidb_search_field: Option<String>,
-        /// Field name to return from TiDB query results (can be overridden by TIDB_RETURN_FIELD env var)
-        #[arg(long, required = false)]
-        tidb_return_field: Option<String>,
+        /// Field names to return from TiDB query results, comma-separated (can be overridden by TIDB_RETURN_FIELD env var)
+        #[arg(long, value_delimiter = ',', required = false)]
+        tidb_return_field: Option<Vec<String>>,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -97,9 +97,9 @@ enum SearchMode {
         /// Field name for full-text search content (can be overridden by TIDB_SEARCH_FIELD env var)
         #[arg(long, required = false)]
         tidb_search_field: Option<String>,
-        /// Field name to return from TiDB query results (can be overridden by TIDB_RETURN_FIELD env var)
-        #[arg(long, required = false)]
-        tidb_return_field: Option<String>,
+        /// Field names to return from TiDB query results, comma-separated (can be overridden by TIDB_RETURN_FIELD env var)
+        #[arg(long, value_delimiter = ',', required = false)]
+        tidb_return_field: Option<Vec<String>>,
         /// Maximum number of results to return
         #[arg(long, default_value = "10")]
         limit: u64,
@@ -335,19 +335,23 @@ async fn main() -> anyhow::Result<()> {
             let tidb_return_field = match env::var("TIDB_RETURN_FIELD") {
                 Ok(env_value) => {
                     info!("Using TIDB_RETURN_FIELD from environment: {}", env_value);
-                    env_value
+                    if env_value == "*" {
+                        vec!["*".to_string()]
+                    } else {
+                        env_value.split(',').map(|s| s.trim().to_string()).collect()
+                    }
                 }
                 Err(_) => match tidb_return_field {
                     Some(arg_value) => {
                         info!(
-                            "Using TIDB_RETURN_FIELD from command line argument: {}",
+                            "Using TIDB_RETURN_FIELD from command line argument: {:?}",
                             arg_value
                         );
                         arg_value
                     }
                     None => {
                         info!("Using TIDB_RETURN_FIELD default value: *");
-                        "*".to_string()
+                        vec!["*".to_string()]
                     }
                 },
             };
@@ -577,19 +581,23 @@ async fn main() -> anyhow::Result<()> {
             let tidb_return_field = match env::var("TIDB_RETURN_FIELD") {
                 Ok(env_value) => {
                     info!("Using TIDB_RETURN_FIELD from environment: {}", env_value);
-                    env_value
+                    if env_value == "*" {
+                        vec!["*".to_string()]
+                    } else {
+                        env_value.split(',').map(|s| s.trim().to_string()).collect()
+                    }
                 }
                 Err(_) => match tidb_return_field {
                     Some(arg_value) => {
                         info!(
-                            "Using TIDB_RETURN_FIELD from command line argument: {}",
+                            "Using TIDB_RETURN_FIELD from command line argument: {:?}",
                             arg_value
                         );
                         arg_value
                     }
                     None => {
                         info!("Using TIDB_RETURN_FIELD default value: *");
-                        "*".to_string()
+                        vec!["*".to_string()]
                     }
                 },
             };
@@ -796,7 +804,7 @@ pub struct TiDBConfig {
     pub table_name: String,
     pub pool: Pool,
     pub search_field: String,
-    pub return_field: String,
+    pub return_field: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

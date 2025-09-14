@@ -669,18 +669,19 @@ impl AgenticSearchServer {
                     tidb_config.table_name, query
                 );
                 debug!(
-                    "Search field: {}, return field: {}",
+                    "Search field: {}, return fields: {:?}",
                     tidb_config.search_field, tidb_config.return_field
                 );
 
-                let select_clause = if tidb_config.return_field == "*" {
+                let select_clause = if tidb_config.return_field.contains(&"*".to_string()) {
                     "*".to_string()
                 } else {
-                    format!(
-                        "`{table}`.`{return_field}`",
-                        table = tidb_config.table_name,
-                        return_field = tidb_config.return_field
-                    )
+                    tidb_config
+                        .return_field
+                        .iter()
+                        .map(|field| format!("`{}`.`{}`", tidb_config.table_name, field))
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 };
 
                 let search_sql = format!(
