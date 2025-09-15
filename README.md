@@ -2,6 +2,43 @@
 
 A Model Context Protocol (MCP) server that provides agentic search capabilities with support for vector search using Qdrant, keyword search using TiDB, or both combined.
 
+- [Cardea Agentic Search](#cardea-agentic-search)
+  - [Features](#features)
+  - [Architecture](#architecture)
+  - [Usage](#usage)
+    - [Command Line Options](#command-line-options)
+      - [Global Options](#global-options)
+      - [1. Qdrant Vector Search Only](#1-qdrant-vector-search-only)
+      - [2. TiDB Keyword Search Only](#2-tidb-keyword-search-only)
+      - [3. Combined Search (Both Vector and Keyword)](#3-combined-search-both-vector-and-keyword)
+    - [Environment Variables](#environment-variables)
+      - [For Qdrant Vector Search](#for-qdrant-vector-search)
+      - [For TiDB Keyword Search](#for-tidb-keyword-search)
+      - [For External Services](#for-external-services)
+  - [Examples](#examples)
+    - [Qdrant Vector Search Example](#qdrant-vector-search-example)
+    - [TiDB Keyword Search Example](#tidb-keyword-search-example)
+    - [Combined Search Example](#combined-search-example)
+  - [How It Works](#how-it-works)
+    - [Vector Search Process](#vector-search-process)
+    - [Keyword Search Process](#keyword-search-process)
+      - [Keyword Extraction Customization](#keyword-extraction-customization)
+  - [TiDB Return Fields Configuration](#tidb-return-fields-configuration)
+    - [Single Field](#single-field)
+    - [Multiple Fields (Comma-separated)](#multiple-fields-comma-separated)
+    - [All Fields (Default)](#all-fields-default)
+    - [With Spaces](#with-spaces)
+    - [Environment Variable Examples](#environment-variable-examples)
+    - [Notes](#notes)
+  - [Development](#development)
+    - [Building](#building)
+    - [Configuration](#configuration)
+      - [Environment Variables](#environment-variables-1)
+      - [Security Best Practices](#security-best-practices)
+      - [Command Line Arguments](#command-line-arguments)
+    - [Dependencies](#dependencies)
+
+
 ## Features
 
 - **Vector Search**: Semantic search using Qdrant vector database with embedding services
@@ -72,7 +109,7 @@ These options apply to all search modes:
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
 - `--tidb-search-field`: Field name for full-text search content (optional, default: "content", overridden by TIDB_SEARCH_FIELD env var)
-- `--tidb-return-field`: Field name to return from TiDB query results (optional, default: "*", overridden by TIDB_RETURN_FIELD env var)
+- `--tidb-return-field`: Field names to return from TiDB query results, comma-separated (optional, default: "*", overridden by TIDB_RETURN_FIELD env var)
 - `--chat-service-base-url`: Chat service base URL (required if CHAT_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
 - `--score-threshold`: Score threshold for results (default: 0.5)
@@ -101,7 +138,7 @@ These options apply to all search modes:
   - On Debian/Ubuntu/Arch Linux: typically `/etc/ssl/certs/ca-certificates.crt`
 - `--tidb-table-name`: Table name in TiDB (required if TIDB_TABLE_NAME env var not set)
 - `--tidb-search-field`: Field name for full-text search content (optional, default: "content", overridden by TIDB_SEARCH_FIELD env var)
-- `--tidb-return-field`: Field name to return from TiDB query results (optional, default: "*", overridden by TIDB_RETURN_FIELD env var)
+- `--tidb-return-field`: Field names to return from TiDB query results, comma-separated (optional, default: "*", overridden by TIDB_RETURN_FIELD env var)
 - `--chat-service-base-url`: Chat service base URL (required if CHAT_SERVICE_BASE_URL env var not set)
 - `--embedding-service-base-url`: Embedding service base URL (required if EMBEDDING_SERVICE_BASE_URL env var not set)
 - `--limit`: Maximum number of results (default: 10)
@@ -124,7 +161,7 @@ These options apply to all search modes:
 - `TIDB_SSL_CA`: Path to the SSL CA certificate (required for TiDB modes, overrides command line)
 - `TIDB_TABLE_NAME`: Table name to search in TiDB (required for TiDB modes, overrides command line)
 - `TIDB_SEARCH_FIELD`: Field name for full-text search content (optional, default: "content")
-- `TIDB_RETURN_FIELD`: Field name to return from TiDB query results (optional, default: "*")
+- `TIDB_RETURN_FIELD`: Field names to return from TiDB query results, comma-separated (optional, default: "*")
 - `PROMPT_KEYWORD_EXTRACTOR`: Custom prompt for keyword extraction (optional, uses built-in default if not set)
 
 #### For External Services
@@ -176,7 +213,7 @@ export CHAT_SERVICE_MODEL=gpt-4
 # Using environment variables (no need for --tidb-ssl-ca, --tidb-table-name, and --chat-service-base-url)
 ./cardea-agentic-search tidb \
     --tidb-search-field "content" \
-    --tidb-return-field "*" \
+    --tidb-return-field "id,title,content" \
     --limit 20 \
     --score-threshold 0.4
 
@@ -185,7 +222,7 @@ export CHAT_SERVICE_MODEL=gpt-4
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --tidb-search-field "content" \
-    --tidb-return-field "*" \
+    --tidb-return-field "id,title,content" \
     --chat-service-base-url http://localhost:8080/v1 \
     --limit 20 \
     --score-threshold 0.4
@@ -211,7 +248,7 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
 # Using environment variables (no need for --qdrant-collection, --qdrant-payload-field, --tidb-ssl-ca, --tidb-table-name, --embedding-service-base-url, --chat-service-base-url)
 ./cardea-agentic-search search \
     --tidb-search-field "content" \
-    --tidb-return-field "*" \
+    --tidb-return-field "id,title,content" \
     --limit 15 \
     --score-threshold 0.5
 
@@ -222,7 +259,7 @@ export EMBEDDING_SERVICE_MODEL=text-embedding-ada-002
     --tidb-ssl-ca /etc/ssl/certs/ca.pem \
     --tidb-table-name documents \
     --tidb-search-field "content" \
-    --tidb-return-field "*" \
+    --tidb-return-field "id,title,content" \
     --chat-service-base-url http://localhost:8080/v1 \
     --embedding-service-base-url http://localhost:8081/v1 \
     --limit 15 \
@@ -267,6 +304,53 @@ Examples:
 - Input: "什么是人工智能对教育的影响？"
   Output: 人工智能 教育 影响
 ```
+
+## TiDB Return Fields Configuration
+
+The `--tidb-return-field` parameter (or `TIDB_RETURN_FIELD` environment variable) supports flexible field selection for TiDB queries:
+
+### Single Field
+
+```bash
+--tidb-return-field id
+# Returns only the 'id' field
+```
+
+### Multiple Fields (Comma-separated)
+
+```bash
+--tidb-return-field id,title,content
+# Returns 'id', 'title', and 'content' fields
+```
+
+### All Fields (Default)
+
+```bash
+--tidb-return-field "*"
+# Returns all fields (*)
+```
+
+### With Spaces
+
+```bash
+--tidb-return-field "id, title, content"
+# Spaces are automatically trimmed
+```
+
+### Environment Variable Examples
+
+```bash
+export TIDB_RETURN_FIELD=id,title,content
+export TIDB_RETURN_FIELD="id, title, content"
+export TIDB_RETURN_FIELD=*
+```
+
+### Notes
+
+- Field names are case-sensitive and must match your TiDB table schema
+- Multiple fields are returned in the order specified
+- The `*` wildcard returns all available fields
+- Invalid field names will result in SQL errors
 
 ## Development
 
@@ -397,7 +481,7 @@ export TIDB_RETURN_FIELD="title,content,source"
 - Use **system environment variables** or **container configurations** for production deployments
 - The `.env.example` file is safe to commit and should be kept as a template
 
-#### Command Line Options
+#### Command Line Arguments
 
 The server uses a flexible configuration system that allows you to:
 
