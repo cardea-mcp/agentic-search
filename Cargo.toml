@@ -2,7 +2,7 @@
 name = "cardea-agentic-search"
 edition    = "2024"
 version    = "0.10.0"
-repository = "https://github.com/cardea-mcp/cardea-agentic-search"
+repository = "https://github.com/cardea-mcp/agentic-search"
 license    = "Apache-2.0"
 
 [dependencies]
