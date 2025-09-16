@@ -1,5 +1,4 @@
 use crate::{AgenticSearchConfig, types::*};
-// use cardea_agentic_search_mcp_common::{QdrantSearchHit, SearchRequest, TidbSearchHit};
 use endpoints::{
     chat::{
         ChatCompletionObject, ChatCompletionRequestBuilder, ChatCompletionRequestMessage,
