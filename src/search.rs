@@ -744,6 +744,7 @@ impl ServerHandler for AgenticSearchServer {
             server_info: Implementation {
                 name: std::env!("CARGO_PKG_NAME").to_string(),
                 version: std::env!("CARGO_PKG_VERSION").to_string(),
+                ..Default::default()
             },
         }
     }
@@ -760,12 +761,14 @@ impl ServerHandler for AgenticSearchServer {
             ),
             Some(vec![PromptArgument {
                 name: "query".to_string(),
+                title: None,
                 description: Some("A user query to search for".to_string()),
                 required: Some(true),
             }]),
         );
 
         Ok(ListPromptsResult {
+            meta: None,
             next_cursor: None,
             prompts: vec![prompt],
         })
